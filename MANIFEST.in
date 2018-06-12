@@ -1,0 +1,2 @@
+include adversarial_vision_challenge/VERSION
+recursive-include data *.png
