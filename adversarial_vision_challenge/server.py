@@ -20,7 +20,7 @@ import foolbox
 from . import __version__
 
 
-def model_server(model, channel_order, image_size, port=None):
+def model_server(model, port=None):
     """Starts an HTTP server that provides access to a Foolbox model.
 
     Parameters
@@ -36,8 +36,8 @@ def model_server(model, channel_order, image_size, port=None):
         variable or 62222 if not set.
 
     """
-    assert channel_order in ['RGB', 'BGR']
-    assert isinstance(image_size, int)
+    channel_order = 'RGB'
+    image_size = 64
     return _model_server(
         'TINY_IMAGENET', model, channel_order=channel_order,
         image_size=image_size, port=port)
@@ -75,10 +75,7 @@ def _model_server(
 
     _batch_predictions = _wrap(
         model.batch_predictions, ['predictions'])
-    _predictions_and_gradient = _wrap(
-        model.predictions_and_gradient, ['predictions', 'gradient'])
-    _backward = _wrap(
-        model.backward, ['gradient'])
+        
 
     @app.route("/")
     def main():  # pragma: no cover
@@ -127,14 +124,6 @@ def _model_server(
     @app.route("/batch_predictions", methods=['POST'])
     def batch_predictions():
         return _batch_predictions(request)
-
-    @app.route("/predictions_and_gradient", methods=['POST'])
-    def predictions_and_gradient():
-        return _predictions_and_gradient(request)
-
-    @app.route("/backward", methods=['POST'])
-    def backward():
-        return _backward(request)
 
     @app.route("/shutdown", methods=['GET'])
     def shutdown():
