@@ -21,11 +21,12 @@ def _img_to_numpy(path):
     return image
 
 
-def _read_path_and_label(input_folder, row):
+def _read_path_and_label(row):
     """
         Returns a tuple of image as numpy array and label as int,
         given the csv row.
     """
+    input_folder = filepath = os.getenv('INPUT_IMG_PATH')
     file_name = row[0]
     img_path = os.path.join(input_folder, file_name)
     img = _img_to_numpy(img_path)
@@ -38,11 +39,10 @@ def read_images():
         Returns a list containing tuples of images as numpy arrays
         and the correspoding true label.
     """
-    input_folder = os.getenv('INPUT_CSV_PATH')
-    filepath = os.path.join(input_folder, 'images.csv')
+    filepath = os.getenv('INPUT_CSV_PATH')
     with open(filepath, 'r') as csvfile:
         reader = csv.reader(csvfile)
-        result = [_read_path_and_label(input_folder, row) for row in reader]
+        result = [_read_path_and_label(row) for row in reader]
         return result
 
 
