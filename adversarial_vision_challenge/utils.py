@@ -4,7 +4,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from client import BSONModel
+from .client import BSONModel
 
 
 def _img_to_numpy(path):
