@@ -3,7 +3,7 @@ NIPS Adversarial Vision Challenge
 
 
 
-# UTILS
+### UTILS
 
 To iterate over the given images and store your adversarials while running an attack,
 use the following utility methods:
@@ -22,7 +22,7 @@ for (file_name, img, label) in read_images():
 ```
 
 
-# RUN A MODEL SERVER
+### RUN A MODEL SERVER
 
 To run a model server, load your model and wrap it into a foolbox model.
 Than pass the fool model to the `model_server` method.
@@ -36,7 +36,7 @@ model_server(foolbox_model)
 ```
 
 
-# RUN AN ATTACK
+### RUN AN ATTACK
 
 To run an attack, use the `load_model` method, which returnsa properly pre-configured model instance.
 
