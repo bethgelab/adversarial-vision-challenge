@@ -30,7 +30,7 @@ def _read_path_and_label(row):
     file_name = row[0]
     img_path = os.path.join(input_folder, file_name)
     img = _img_to_numpy(img_path)
-    true_label = row[1]
+    true_label = np.int64(row[1])
     return (file_name, img, true_label)
 
 
