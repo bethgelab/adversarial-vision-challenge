@@ -1,14 +1,17 @@
+import csv
 import os
+
 import numpy as np
 from PIL import Image
-import csv
+
+from client import BSONModel
 
 
 def _img_to_numpy(path):
     """
         Reads image image from the given path and returns an numpy array.
     """
-    shape=(64, 64)
+    shape = (64, 64)
     path = os.path.join(os.path.dirname(__file__), path)
     image = Image.open(path)
     image = image.resize(shape)
@@ -42,6 +45,7 @@ def read_images():
         result = [_read_path_and_label(input_folder, row) for row in reader]
         return result
 
+
 def store_adversarial(file_name, adversarial):
     """
         Given the filename, stores the adversarial as .npy file.
@@ -52,11 +56,12 @@ def store_adversarial(file_name, adversarial):
     np.save(path_without_extension, adversarial)
 
 
-from adversarial_vision_challenge.utils import read_images, store_adversarial
-
-for (file_name, img, label) in read_images():
-    # run your adversarial attack
-    adversarial = img # ...
-    store_adversarial(file_name, adversarial)
-
-    
+def load_model():
+    """
+        Returns an BSONModel reading the server URI and post from environment variables.
+    """
+    model_port = os.getenv('MODEL_PORT', 8989)
+    model_server = os.getenv('MODEL_SERVER', 'localhost')
+    model_url = '{0}:{1}'.format(model_server, model_port)
+    model = BSONModel(model_url)
+    return model

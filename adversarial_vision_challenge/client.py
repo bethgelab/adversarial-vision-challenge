@@ -1,16 +1,17 @@
-from abc import abstractmethod
 import sys
+from abc import abstractmethod
+
+import foolbox
+import numpy as np
+from foolbox.attacks import Attack
+from foolbox.models import DifferentiableModel
 
 if sys.version_info > (3, 3):
     import urllib.parse as parse
 else:
     import urlparse as parse
 
-import numpy as np
 
-from foolbox.models import DifferentiableModel
-from foolbox.attacks import Attack
-import foolbox
 
 
 class HTTPClient(object):

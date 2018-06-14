@@ -1,26 +1,21 @@
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-from functools import wraps
 import inspect
 import os
+from functools import wraps
 from io import BytesIO
 
-from flask import Flask
-from flask import Response
-from flask import request
-
-from PIL import Image
-import numpy as np
 import bson
+import foolbox
+import numpy as np
+from flask import Flask, Response, request
+from PIL import Image
 
+from . import __version__
 from .client import BSONModel
 
-import foolbox
-from . import __version__
 
-
-def model_server(model, port=None):
+def model_server(model, port=8989):
     """Starts an HTTP server that provides access to a Foolbox model.
 
     Parameters
@@ -75,7 +70,6 @@ def _model_server(
 
     _batch_predictions = _wrap(
         model.batch_predictions, ['predictions'])
-        
 
     @app.route("/")
     def main():  # pragma: no cover
