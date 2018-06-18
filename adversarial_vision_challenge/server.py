@@ -18,6 +18,11 @@ from . import __version__
 from .client import BSONModel
 from .logger import logger
 
+
+# the number of max requests to predict for this model run
+# based on the # of images to predict
+number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
+
 class MaxPredictionsExceededError(Exception):
     pass
 
@@ -67,10 +72,6 @@ def _model_server(
     """
 
     assert dataset in ['TINY_IMAGENET']
-
-    # the number of max requests to predict for this model run
-    # based on the # of images to predict
-    number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
 
     if port is None:
         port = int(os.environ.get('PORT'))
@@ -135,13 +136,6 @@ def _model_server(
         logger.info('prediction took: %s s', (end-start))
         return prediction
 
-    def _check_rate_limitation():
-        global number_of_max_predictions
-        number_of_max_predictions -= 1
-        if (number_of_max_predictions <= 0):
-            logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
-            raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
-
     @app.route("/shutdown", methods=['GET'])
     def shutdown():
         _shutdown_server()
@@ -150,6 +144,12 @@ def _model_server(
     app.run(host='0.0.0.0', port=port)
 
 
+def _check_rate_limitation():
+    global number_of_max_predictions
+    number_of_max_predictions -= 1
+    if (number_of_max_predictions <= 0):
+        logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
+        raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
 
 def _shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
