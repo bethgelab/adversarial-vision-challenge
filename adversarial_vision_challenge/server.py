@@ -146,6 +146,7 @@ def _model_server(
 
 def _check_rate_limitation():
     global number_of_max_predictions
+    logger.debug('Number of remaining max requests: %s', number_of_max_predictions)
     number_of_max_predictions -= 1
     if (number_of_max_predictions <= 0):
         logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
