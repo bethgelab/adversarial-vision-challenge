@@ -240,5 +240,5 @@ def _decode_arrays(d):
 
 def _check_image_size(shape):
     logger.info('verifying input img shape: {0}'.format(shape))
-    if shape != (1, 64, 64, 3):
+    if shape[1] != 64 or shape[2] != 64:
         raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))
