@@ -4,7 +4,6 @@ import inspect
 import os
 from functools import wraps
 from io import BytesIO
-import sys
 
 import bson
 import foolbox
@@ -16,6 +15,7 @@ from werkzeug.exceptions import BadRequest
 
 from . import __version__
 from .client import BSONModel
+from .logger import logger
 
 def model_server(model, port=8989):
     """Starts an HTTP server that provides access to a Foolbox model.
@@ -226,7 +226,7 @@ def _encode_arrays(d):
 
 
 def _decode_arrays(d):
-    print('decoding incoming array: {0}'.format(d),  file=sys.stderr)
+    logger.info('decoding incoming array: {0}'.format(d),  file=sys.stderr)
     for key in list(d.keys()):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
@@ -239,6 +239,6 @@ def _decode_arrays(d):
     return d
 
 def _check_image_size(shape):
-    print('verifying input img shape: {0}'.format(shape),  file=sys.stderr)
+    logger.info('verifying input img shape: {0}'.format(shape),  file=sys.stderr)
     if shape != (1, 64, 64, 3):
         raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))
