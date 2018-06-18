@@ -4,6 +4,7 @@ import inspect
 import os
 from functools import wraps
 from io import BytesIO
+import timeit
 
 import bson
 import foolbox
@@ -16,6 +17,11 @@ from werkzeug.exceptions import BadRequest
 from . import __version__
 from .client import BSONModel
 from .logger import logger
+
+
+class MaxPredictionsExceededError(Exception):
+    pass
+
 
 def model_server(model, port=8989):
     """Starts an HTTP server that provides access to a Foolbox model.
@@ -62,6 +68,10 @@ def _model_server(
     """
 
     assert dataset in ['TINY_IMAGENET']
+
+    # the number of max requests to predict for this model run
+    # based on the # of images to predict
+    number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
 
     if port is None:
         port = int(os.environ.get('PORT'))
@@ -119,7 +129,12 @@ def _model_server(
 
     @app.route("/batch_predictions", methods=['POST'])
     def batch_predictions():
-        return _batch_predictions(request)
+        _check_rate_limitation()
+        start = timeit.default_timer()
+        prediction = _batch_predictions(request)
+        end = timeit.default_timer()
+        logger.info('prediction took: %s s', (end-start))
+        return prediction
 
     @app.route("/shutdown", methods=['GET'])
     def shutdown():
@@ -127,6 +142,12 @@ def _model_server(
         return 'Shutting down ...'
 
     app.run(host='0.0.0.0', port=port)
+
+    def _check_rate_limitation():
+        number_of_max_predictions -= 1
+        if (number_of_max_predictions <= 0):
+            logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
+            raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
 
 
 def _shutdown_server():
@@ -150,7 +171,6 @@ def _wrap(function, output_names):
 
     @wraps(function)
     def wrapper(request):
-        print('Incoming request: ', request)
         verbose = request.args.get('verbose', False)
 
         if verbose:  # pragma: no cover
@@ -226,7 +246,6 @@ def _encode_arrays(d):
 
 
 def _decode_arrays(d):
-    logger.info('decoding incoming array: {0}'.format(d))
     for key in list(d.keys()):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
@@ -239,6 +258,6 @@ def _decode_arrays(d):
     return d
 
 def _check_image_size(shape):
-    logger.info('verifying input img shape: {0}'.format(shape))
     if shape[1] != 64 or shape[2] != 64:
+        logger.info('img in request is of shape: %s, instead of 64x64', shape)
         raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))

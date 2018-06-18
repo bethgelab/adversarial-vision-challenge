@@ -200,7 +200,7 @@ class HTTPAttack(Attack, HTTPClient):
     def __init__(self, attack_url, model=None, criterion=None):
         import requests
         self.requests = requests
-
+ 
         self._base_url = attack_url
 
         super().__init__(model=model, criterion=criterion)
