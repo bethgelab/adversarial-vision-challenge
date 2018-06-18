@@ -18,8 +18,6 @@ from . import __version__
 from .client import BSONModel
 from .logger import logger
 
-
-number_of_max_predictions = 1
 class MaxPredictionsExceededError(Exception):
     pass
 
@@ -137,6 +135,13 @@ def _model_server(
         logger.info('prediction took: %s s', (end-start))
         return prediction
 
+    def _check_rate_limitation():
+        global number_of_max_predictions
+        number_of_max_predictions -= 1
+        if (number_of_max_predictions <= 0):
+            logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
+            raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
+
     @app.route("/shutdown", methods=['GET'])
     def shutdown():
         _shutdown_server()
@@ -225,13 +230,7 @@ def _wrap(function, output_names):
         result = bson.dumps(result)
         return Response(result, mimetype='application/bson')
 
-    return wrapper
-
-def _check_rate_limitation():
-    number_of_max_predictions -= 1
-    if (number_of_max_predictions <= 0):
-        logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
-        raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
+    return wrapper   
 
 def _encode_arrays(d):
     for key in list(d.keys()):
