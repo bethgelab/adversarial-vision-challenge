@@ -226,7 +226,7 @@ def _encode_arrays(d):
 
 
 def _decode_arrays(d):
-    logger.info('decoding incoming array: {0}'.format(d),  file=sys.stderr)
+    logger.info('decoding incoming array: {0}'.format(d))
     for key in list(d.keys()):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
@@ -239,6 +239,6 @@ def _decode_arrays(d):
     return d
 
 def _check_image_size(shape):
-    logger.info('verifying input img shape: {0}'.format(shape),  file=sys.stderr)
+    logger.info('verifying input img shape: {0}'.format(shape))
     if shape != (1, 64, 64, 3):
         raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))
