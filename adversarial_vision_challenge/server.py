@@ -11,6 +11,8 @@ import numpy as np
 from flask import Flask, Response, request
 from PIL import Image
 
+from werkzeug.exceptions import BadRequest
+
 from . import __version__
 from .client import BSONModel
 
@@ -163,6 +165,7 @@ def _wrap(function, output_names):
         if content_type == 'application/bson':
             bson_args = bson.loads(request.data)
             bson_args = _decode_arrays(bson_args)
+
         else:  # pragma: no cover
             bson_args = {}
 
@@ -226,8 +229,13 @@ def _decode_arrays(d):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
             shape = d[key]['shape']
+            _check_image_size(shape)
             dtype = d[key]['dtype']
             data = d[key]['data']
             array = np.frombuffer(data, dtype=dtype).reshape(shape)
             d[key] = array
     return d
+
+def _check_image_size(shape):
+    if shape != (64, 64):
+        raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))

@@ -1,17 +1,18 @@
 import sys
 from abc import abstractmethod
+import time
 
 import foolbox
 import numpy as np
 from foolbox.attacks import Attack
 from foolbox.models import DifferentiableModel
 
+from .retry_helper import retryable
+
 if sys.version_info > (3, 3):
     import urllib.parse as parse
 else:
     import urlparse as parse
-
-
 
 
 class HTTPClient(object):
@@ -77,6 +78,7 @@ class HTTPClient(object):
         """
         raise NotImplementedError
 
+    @retryable
     def _get(self, path):
         """
         Performs a get request to the url specified by path and
@@ -85,6 +87,7 @@ class HTTPClient(object):
         """
         url = self._url(path=path)
         r = self.requests.get(url)
+        r.raise_for_status()
         assert r.ok
         return r.text
 
@@ -180,23 +183,6 @@ class HTTPModel(DifferentiableModel, HTTPClient):
         predictions = result['predictions']
         return predictions
 
-    def predictions_and_gradient(self, image, label):
-        image = np.asarray(image)
-        label = np.asarray(label)
-        data = {'image': image, 'label': label}
-        result = self._post('/predictions_and_gradient', data)
-        predictions = result['predictions']
-        gradient = result['gradient']
-        return predictions, gradient
-
-    def backward(self, gradient, image):
-        gradient = np.asarray(gradient)
-        image = np.asarray(image)
-        data = {'gradient': gradient, 'image': image}
-        result = self._post('/backward', data)
-        gradient = result['gradient']
-        return gradient
-
 
 class HTTPAttack(Attack, HTTPClient):
     """Base class for attacks that connect to an http server and
@@ -269,6 +255,7 @@ class BSON(object):
         """
         return np.frombuffer(data, dtype=dtype).reshape(shape)
 
+    @retryable
     def _post(self, path, data):
         import bson
         url = self._url(path=path)
@@ -276,6 +263,7 @@ class BSON(object):
         data = self._encode_arrays(data)
         data = bson.dumps(data)
         r = self.requests.post(url, headers=headers, data=data)
+        r.raise_for_status()
         assert r.ok
         result = r.content
         result = bson.loads(result)
