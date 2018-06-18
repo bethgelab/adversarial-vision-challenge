@@ -150,6 +150,7 @@ def _wrap(function, output_names):
 
     @wraps(function)
     def wrapper(request):
+        print('Incoming request: ', request)
         verbose = request.args.get('verbose', False)
 
         if verbose:  # pragma: no cover
@@ -225,6 +226,7 @@ def _encode_arrays(d):
 
 
 def _decode_arrays(d):
+    print('decoding incoming array: ', d)
     for key in list(d.keys()):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
@@ -237,5 +239,6 @@ def _decode_arrays(d):
     return d
 
 def _check_image_size(shape):
+    print('verifying input img shape: {0}'.format(shape))
     if shape != (1, 64, 64, 3):
         raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))
