@@ -7,6 +7,7 @@ from foolbox.models import Model
 import bson
 
 from .retry_helper import retryable
+from .logger import logger
 
 if sys.version_info > (3, 3):
     import urllib.parse as parse
@@ -140,8 +141,11 @@ class TinyImageNetBSONModel(Model, HTTPClient):
             # we accept float32, but only if the values
             # are between 0 and 255 and we convert them
             # to integers
-            assert image.min() >= 0
-            assert image.max() <= 255
+            if image.min() < 0:
+                logger.warning('clipped value smaller than 0 to 0')
+            if image.max() > 255:
+                logger.warning('clipped value greater than 255 to 255')
+            image = np.clip(image, 0, 255)
             image = image.astype(np.uint8)
         assert image.dtype == np.uint8
 

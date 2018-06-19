@@ -47,8 +47,15 @@ def model_server(model, port=8989):
     channel_axis = model.channel_axis()
     assert channel_axis in [1, 3]
 
-    bounds = model.bounds()
-    assert bounds == (0, 255)
+    try:
+        bounds = model.bounds()
+    except AttributeError:
+        bounds = (0, 255)
+        logger.info('model has no bounds method, assuming (0, 255)')
+
+    assert bounds == (0, 255), (
+        'bounds must be (0, 255), update your model or use the preprocessing '
+        'argument of foolbox model wrappers')
 
     def _predict(image):
         assert isinstance(image, np.ndarray)
