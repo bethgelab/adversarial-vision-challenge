@@ -7,16 +7,15 @@ from io import BytesIO
 import timeit
 
 import bson
-import foolbox
 import numpy as np
 from flask import Flask, Response, request
 from PIL import Image
 
+# TODO: use bad request to give feedback
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import TooManyRequests
 
 from . import __version__
-from .client import BSONModel
 from .logger import logger
 
 
@@ -32,44 +31,11 @@ def model_server(model, port=8989):
     ----------
     model : `foolbox.model.Model` instance
         The model that should be run.
-    channel_order : str
-        The color channel ordering expected by the model ('RGB' or 'BGR')
-    image_size : int
-        The image size expected by the model (e.g. 224 or 299)
     port : int
         The TCP port used by the HTTP server. Defaults to the PORT environment
         variable or 62222 if not set.
 
     """
-    channel_order = 'RGB'
-    image_size = 64
-    return _model_server(
-        'TINY_IMAGENET', model, channel_order=channel_order,
-        image_size=image_size, port=port)
-
-
-def _model_server(
-        dataset, model, channel_order=None, image_size=None, port=None):
-    """Starts an HTTP server that provides access to a Foolbox model.
-
-    Parameters
-    ----------
-    dataset : str
-        The dataset the model is compatible with (MNIST, CIFAR or IMAGENET)
-    model : `foolbox.model.Model` instance
-        The model that should be run.
-    channel_order : str
-        The color channel ordering expected by the model
-        (None for MNIST, 'RGB' or 'BGR' for CIFAR and ImageNet)
-    image_size : int
-        The image size expected by the model (for ImageNet only!)
-    port : int
-        The TCP port used by the HTTP server. Defaults to the PORT environment
-        variable or 62222 if not set.
-
-    """
-
-    assert dataset in ['TINY_IMAGENET']
 
     if port is None:
         port = int(os.environ.get('PORT'))
@@ -78,13 +44,38 @@ def _model_server(
 
     app = Flask(__name__)
 
-    _batch_predictions = _wrap(
-        model.batch_predictions, ['predictions'])
+    channel_axis = model.channel_axis()
+    assert channel_axis in [1, 3]
+
+    bounds = model.bounds()
+    assert bounds == (0, 255)
+
+    def _predict(image):
+        assert isinstance(image, np.ndarray)
+        assert image.shape == (64, 64, 3)
+        assert image.dtype == np.uint8
+
+        # models (should) expect float32 arrays
+        image = image.astype(np.float32)
+
+        if channel_axis == 1:
+            image = np.transpose(image, [2, 0, 1])
+
+        prediction = model.predictions(image)
+
+        if isinstance(prediction, np.ndarray) and prediction.size > 1:
+            assert prediction.size == 200
+            prediction = np.argmax(prediction)
+        prediction = int(prediction)
+        assert 0 <= prediction < 200
+        return prediction
+
+    _predict = _wrap(_predict, ['prediction'])
 
     @app.route("/")
     def main():  # pragma: no cover
         return Response(
-            'Robust Vision Benchmark Model Server\n',
+            'NIPS 2018 Adversarial Vision Challenge Model Server\n',
             mimetype='text/plain')
 
     @app.route("/server_version", methods=['GET'])
@@ -92,46 +83,13 @@ def _model_server(
         v = __version__
         return Response(str(v), mimetype='text/plain')
 
-    @app.route("/dataset", methods=['GET'])
-    def r_dataset():
-        return Response(dataset, mimetype='text/plain')
-
-    @app.route("/bounds", methods=['GET'])
-    def bounds():
-        min_, max_ = model.bounds()
-        return Response(
-            '{}\n{}'.format(min_, max_), mimetype='text/plain')
-
-    @app.route("/channel_axis", methods=['GET'])
-    def channel_axis():
-        result = model.channel_axis()
-        assert result == int(result)
-        result = str(int(result))
-        return Response(result, mimetype='text/plain')
-
-    @app.route("/num_classes", methods=['GET'])
-    def num_classes():
-        result = model.num_classes()
-        assert result == int(result)
-        result = str(int(result))
-        return Response(result, mimetype='text/plain')
-
-    @app.route("/image_size", methods=['GET'])
-    def r_iimage_size():
-        assert int(image_size) == image_size
-        return Response(str(image_size), mimetype='text/plain')
-
-    @app.route("/channel_order", methods=['GET'])
-    def r_channel_order():
-        return   Response(channel_order, mimetype='text/plain')
-
-    @app.route("/batch_predictions", methods=['POST'])
-    def batch_predictions():
+    @app.route("/predict", methods=['POST'])
+    def predict():
         _check_rate_limitation()
         start = timeit.default_timer()
-        prediction = _batch_predictions(request)
+        prediction = _predict(request)
         end = timeit.default_timer()
-        logger.info('prediction took: %s s', (end-start))
+        logger.info('prediction took: %s s', (end - start))
         return prediction
 
     @app.route("/shutdown", methods=['GET'])
@@ -144,11 +102,16 @@ def _model_server(
 
 def _check_rate_limitation():
     global number_of_max_predictions
-    logger.debug('Number of remaining max requests: %s', number_of_max_predictions)
+    logger.debug('Number of remaining max requests: %s',
+                 number_of_max_predictions)
     number_of_max_predictions -= 1
-    if (number_of_max_predictions <= 0):
-        logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
-        raise TooManyRequests('Maximal number of prediction requests exceeded: {0}'.format(number_of_max_predictions))
+    if (number_of_max_predictions < 0):
+        logger.error('Maximal number of prediction requests exceeded: %s',
+                     number_of_max_predictions)
+        raise TooManyRequests(
+            'Maximal number of prediction requests exceeded: {0}'.format(
+                number_of_max_predictions))
+
 
 def _shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
@@ -219,17 +182,21 @@ def _wrap(function, output_names):
                 data = Image.open(BytesIO(data))
             add_argument(name, data)
 
-        result = function(**args)
-        if len(output_names) == 1:
-            result = {output_names[0]: result}
-        else:
-            assert len(result) == len(output_names)
-            result = dict(zip(output_names, result))
-        result = _encode_arrays(result)
-        result = bson.dumps(result)
+        try:
+            result = function(**args)
+            if len(output_names) == 1:
+                result = {output_names[0]: result}
+            else:
+                assert len(result) == len(output_names)
+                result = dict(zip(output_names, result))
+            result = _encode_arrays(result)
+            result = bson.dumps(result)
+        except AssertionError as e:
+            raise BadRequest(str(e))
         return Response(result, mimetype='application/bson')
 
-    return wrapper   
+    return wrapper
+
 
 def _encode_arrays(d):
     for key in list(d.keys()):
@@ -249,14 +216,8 @@ def _decode_arrays(d):
         if hasattr(d[key], 'get') \
                 and d[key].get('type') == 'array':
             shape = d[key]['shape']
-            _check_image_size(shape)
             dtype = d[key]['dtype']
             data = d[key]['data']
             array = np.frombuffer(data, dtype=dtype).reshape(shape)
             d[key] = array
     return d
-
-def _check_image_size(shape):
-    if shape[1] != 64 or shape[2] != 64:
-        logger.info('img in request is of shape: %s, instead of 64x64', shape)
-        raise BadRequest("Only images of shape 64x64 are allowed. You've submitted an image of shape: {0}".format(shape))
