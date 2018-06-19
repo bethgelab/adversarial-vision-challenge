@@ -123,7 +123,7 @@ def _model_server(
 
     @app.route("/channel_order", methods=['GET'])
     def r_channel_order():
-        return   fResponse(channel_order, mimetype='text/plain')
+        return   Response(channel_order, mimetype='text/plain')
 
     @app.route("/batch_predictions", methods=['POST'])
     def batch_predictions():
