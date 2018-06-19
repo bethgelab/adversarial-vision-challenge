@@ -4,7 +4,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from .client import BSONModel
+from .client import TinyImageNetBSONModel
 
 
 def _img_to_numpy(path):
@@ -64,5 +64,5 @@ def load_model():
     model_port = os.getenv('MODEL_PORT', 8989)
     model_server = os.getenv('MODEL_SERVER', 'localhost')
     model_url = 'http://{0}:{1}'.format(model_server, model_port)
-    model = BSONModel(model_url)
+    model = TinyImageNetBSONModel(model_url)
     return model

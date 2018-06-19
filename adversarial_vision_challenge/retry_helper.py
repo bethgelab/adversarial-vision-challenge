@@ -1,6 +1,7 @@
 import time
 from .logger import logger
 
+
 class RetriesExceededError(Exception):
     pass
 

@@ -102,7 +102,7 @@ class HTTPClient(object):
         raise NotImplementedError
 
 
-class TinyImageNetHTTPModel(Model, HTTPClient):
+class TinyImageNetBSONModel(Model, HTTPClient):
     """Base class for models that connect to an http server and
     dispatch all requets to that server.
 
@@ -119,7 +119,7 @@ class TinyImageNetHTTPModel(Model, HTTPClient):
 
         self._base_url = url
 
-        super(TinyImageNetHTTPModel, self).__init__(
+        super(TinyImageNetBSONModel, self).__init__(
             bounds=(0, 255), channel_axis=3)
 
     def _url(self, path=''):
@@ -147,6 +147,7 @@ class TinyImageNetHTTPModel(Model, HTTPClient):
 
         data = {'image': image}
         result = self._post('/predict', data)
+        print(result)
 
         prediction = result['prediction']
         assert isinstance(prediction, int)

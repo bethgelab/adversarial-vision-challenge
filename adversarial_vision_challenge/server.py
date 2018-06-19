@@ -11,7 +11,6 @@ import numpy as np
 from flask import Flask, Response, request
 from PIL import Image
 
-# TODO: use bad request to give feedback
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import TooManyRequests
 
@@ -51,6 +50,7 @@ def model_server(model, port=8989):
     assert bounds == (0, 255)
 
     def _predict(image):
+        print('_predict got called')
         assert isinstance(image, np.ndarray)
         assert image.shape == (64, 64, 3)
         assert image.dtype == np.uint8
@@ -97,6 +97,7 @@ def model_server(model, port=8989):
         _shutdown_server()
         return 'Shutting down ...'
 
+    print('starting server on port {}'.format(port))
     app.run(host='0.0.0.0', port=port)
 
 
@@ -122,6 +123,8 @@ def _shutdown_server():
 
 def _wrap(function, output_names):
     """A decorator that converts data between flask and python / numpy"""
+
+    print('WRAP GOT CALLED')
 
     try:
         # Python 3
