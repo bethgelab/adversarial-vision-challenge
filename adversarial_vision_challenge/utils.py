@@ -2,7 +2,6 @@ import csv
 import os
 
 import numpy as np
-from PIL import Image
 
 from .client import TinyImageNetBSONModel
 
@@ -13,37 +12,31 @@ def _img_to_numpy(path):
     """
     shape = (64, 64)
     path = os.path.join(os.path.dirname(__file__), path)
-    image = Image.open(path)
-    image = image.resize(shape)
+    image = np.load(path)
     image = np.asarray(image, dtype=np.float32)
     image = image[:, :, :3]
     image = image / 255
     return image
 
-
-def _read_path_and_label(row):
+def _read_image(file_name):
     """
         Returns a tuple of image as numpy array and label as int,
         given the csv row.
     """
     input_folder = os.getenv('INPUT_IMG_PATH')
-    file_name = row[0]
     img_path = os.path.join(input_folder, file_name)
-    img = _img_to_numpy(img_path)
-    true_label = np.int64(row[1])
-    return (file_name, img, true_label)
-
+    return _img_to_numpy(img_path)
 
 def read_images():
     """
         Returns a list containing tuples of images as numpy arrays
         and the correspoding true label.
     """
-    filepath = os.getenv('INPUT_CSV_PATH')
-    with open(filepath, 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        result = [_read_path_and_label(row) for row in reader]
-        return result
+    filepath = os.getenv('INPUT_YML_PATH')
+    with open(filepath, 'r') as ymlfile:
+        data = yaml.load(ymlfile)
+
+    return [(key, _read_image(key), data[key]) for key in data.keys()]
 
 
 def store_adversarial(file_name, adversarial):
