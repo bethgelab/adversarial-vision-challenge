@@ -78,7 +78,7 @@ class HTTPClient(object):
         """
         raise NotImplementedError
 
-    #@retryable
+    @retryable
     def _get(self, path):
         """
         Performs a get request to the url specified by path and
@@ -257,7 +257,7 @@ class BSON(object):
         """
         return np.frombuffer(data, dtype=dtype).reshape(shape)
 
-    #@retryable
+    @retryable
     def _post(self, path, data):
         import bson
         url = self._url(path=path)

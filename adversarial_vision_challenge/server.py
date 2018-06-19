@@ -13,6 +13,7 @@ from flask import Flask, Response, request
 from PIL import Image
 
 from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import TooManyRequests
 
 from . import __version__
 from .client import BSONModel
@@ -22,9 +23,6 @@ from .logger import logger
 # the number of max requests to predict for this model run
 # based on the # of images to predict
 number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
-
-class MaxPredictionsExceededError(Exception):
-    pass
 
 
 def model_server(model, port=8989):
@@ -125,7 +123,7 @@ def _model_server(
 
     @app.route("/channel_order", methods=['GET'])
     def r_channel_order():
-        return Response(channel_order, mimetype='text/plain')
+        return   fResponse(channel_order, mimetype='text/plain')
 
     @app.route("/batch_predictions", methods=['POST'])
     def batch_predictions():
@@ -150,7 +148,7 @@ def _check_rate_limitation():
     number_of_max_predictions -= 1
     if (number_of_max_predictions <= 0):
         logger.error('Maximal number of prediction requests exceeded: %s', number_of_max_predictions)
-        raise MaxPredictionsExceededError('Maximal number of prediction requests exceeded.')
+        raise TooManyRequests('Maximal number of prediction requests exceeded: {0}'.format(number_of_max_predictions))
 
 def _shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
