@@ -1,4 +1,5 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
 import inspect
 import os
@@ -11,7 +12,7 @@ import numpy as np
 from flask import Flask, Response, request
 from PIL import Image
 
-from werkzeug.exceptions import BadRequest
+# from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import TooManyRequests
 
 from . import __version__
@@ -50,7 +51,6 @@ def model_server(model, port=8989):
     assert bounds == (0, 255)
 
     def _predict(image):
-        print('_predict got called')
         assert isinstance(image, np.ndarray)
         assert image.shape == (64, 64, 3)
         assert image.dtype == np.uint8
@@ -124,8 +124,6 @@ def _shutdown_server():
 def _wrap(function, output_names):
     """A decorator that converts data between flask and python / numpy"""
 
-    print('WRAP GOT CALLED')
-
     try:
         # Python 3
         sig = inspect.signature(function)
@@ -185,17 +183,14 @@ def _wrap(function, output_names):
                 data = Image.open(BytesIO(data))
             add_argument(name, data)
 
-        try:
-            result = function(**args)
-            if len(output_names) == 1:
-                result = {output_names[0]: result}
-            else:
-                assert len(result) == len(output_names)
-                result = dict(zip(output_names, result))
-            result = _encode_arrays(result)
-            result = bson.dumps(result)
-        except AssertionError as e:
-            raise BadRequest(str(e))
+        result = function(**args)
+        if len(output_names) == 1:
+            result = {output_names[0]: result}
+        else:
+            assert len(result) == len(output_names)
+            result = dict(zip(output_names, result))
+        result = _encode_arrays(result)
+        result = bson.dumps(result)
         return Response(result, mimetype='application/bson')
 
     return wrapper

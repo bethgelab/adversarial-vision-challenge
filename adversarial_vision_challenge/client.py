@@ -1,8 +1,10 @@
 import sys
 from abc import abstractmethod
 
+import requests
 import numpy as np
 from foolbox.models import Model
+import bson
 
 from .retry_helper import retryable
 
@@ -71,7 +73,6 @@ class HTTPClient(object):
         an http post request to the url specified by path, decodes
         the result and returns it as a dictionary.
         """
-        import bson
         url = self._url(path=path)
         headers = {'content-type': 'application/bson'}
         data = self._encode_arrays(data)
@@ -114,7 +115,6 @@ class TinyImageNetBSONModel(Model, HTTPClient):
     """
 
     def __init__(self, url):
-        import requests
         self.requests = requests
 
         self._base_url = url
@@ -147,7 +147,6 @@ class TinyImageNetBSONModel(Model, HTTPClient):
 
         data = {'image': image}
         result = self._post('/predict', data)
-        print(result)
 
         prediction = result['prediction']
         assert isinstance(prediction, int)
