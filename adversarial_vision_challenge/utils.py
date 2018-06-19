@@ -26,7 +26,7 @@ def _read_path_and_label(row):
         Returns a tuple of image as numpy array and label as int,
         given the csv row.
     """
-    input_folder = filepath = os.getenv('INPUT_IMG_PATH')
+    input_folder = os.getenv('INPUT_IMG_PATH')
     file_name = row[0]
     img_path = os.path.join(input_folder, file_name)
     img = _img_to_numpy(img_path)
@@ -58,7 +58,8 @@ def store_adversarial(file_name, adversarial):
 
 def load_model():
     """
-        Returns an BSONModel reading the server URI and post from environment variables.
+        Returns an BSONModel reading the server URI and post from
+        environment variables.
     """
     model_port = os.getenv('MODEL_PORT', 8989)
     model_server = os.getenv('MODEL_SERVER', 'localhost')
