@@ -134,6 +134,9 @@ class TinyImageNetBSONModel(Model, HTTPClient):
         return self._get('/server_version')
 
     def __call__(self, image):
+        return self.predict(image)
+
+    def predict(self, image):
         # image should a 64 x 64 x 3 RGB image
         assert isinstance(image, np.ndarray)
         assert image.shape == (64, 64, 3)
@@ -158,10 +161,17 @@ class TinyImageNetBSONModel(Model, HTTPClient):
         return prediction
 
     def batch_predictions(self, images):
-        raise NotImplementedError
+        assert images.shape[0] == 1
+        image = images[0]
+        predictions = self.predictions(image)
+        predictions = predictions[np.newaxis]
+        return predictions
 
     def predictions(self, image):
-        raise NotImplementedError
+        class_ = self.predict(image)
+        predictions = np.zeros((200,), dtype=np.float32)
+        predictions[class_] = 1
+        return predictions
 
     def num_classes(self):
         return 200
