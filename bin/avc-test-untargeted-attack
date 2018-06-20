@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import argparse
+import subprocess
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "directory", help="The directory containing the Dockerfile.")
+    parser.add_argument(
+        "--no-cache", action='store_true',
+        help="Disables the cache when building the attack image.")
+    parser.add_argument(
+        "--gpu", type=int, default=0, help="GPU number to run container on")
+    args = parser.parse_args()
+    if args.no_cache:
+        subprocess.Popen("python avc-test-attack --no-cache --gpu {gpu} --mode untargeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()
+    else:
+        subprocess.Popen("python avc-test-attack --gpu {gpu} --mode untargeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()
