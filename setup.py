@@ -53,7 +53,7 @@ setup(
     keywords="",
     author="Jonas Rauber & Wieland Brendel & Behar Veliqi",
     author_email="behar.veliqi@uni-tuebingen.de",
-    url="https://github.com/bveliqi/adversarial-vision-challenge",
+    url="https://github.com/bethgelab/adversarial-vision-challenge",
     license="MIT",
     packages=find_packages(),
     scripts=[
