@@ -26,6 +26,7 @@ install_requires = [
     'pillow',
     'requests',
     'setuptools',
+    'pyyaml'
 ]
 
 tests_require = [
