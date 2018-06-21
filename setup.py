@@ -56,7 +56,12 @@ setup(
     url="https://github.com/bveliqi/adversarial-vision-challenge",
     license="MIT",
     packages=find_packages(),
-    scripts=[],
+    scripts=[
+        'bin/avc-test-model',
+        'bin/avc-test-attack',
+        'bin/avc-test-untargeted-attack',
+        'bin/avc-test-targeted-attack',
+        ],
     include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
