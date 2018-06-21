@@ -1,0 +1,1 @@
+TAG=$(cat adversarial_vision_challenge/VERSION) bash -c 'git tag $TAG && git push origin $TAG'
