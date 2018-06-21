@@ -14,6 +14,6 @@ if __name__ == '__main__':
         "--gpu", type=int, default=0, help="GPU number to run container on")
     args = parser.parse_args()
     if args.no_cache:
-        subprocess.Popen("python avc-test-attack --no-cache --gpu {gpu} --mode targeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()
+        subprocess.Popen("avc-test-attack --no-cache --gpu {gpu} --mode targeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()
     else:
-        subprocess.Popen("python avc-test-attack --gpu {gpu} --mode targeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()
+        subprocess.Popen("avc-test-attack --gpu {gpu} --mode targeted {directory}".format(gpu=args.gpu, directory=args.directory), shell=True).wait()

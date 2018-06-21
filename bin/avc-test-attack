@@ -82,8 +82,7 @@ def test_attack(directory, no_cache, gpu, mode):
 
     thread = threading.Thread(
         target=model_server,
-        args=(fmodel,),
-        kwargs={'port': 8989})
+        args=(fmodel,))
     thread.daemon = True
     thread.start()
 
@@ -101,9 +100,10 @@ def test_attack(directory, no_cache, gpu, mode):
 
     # start attack container
     print('Starting attack container')
-    hostpath = os.path.dirname(os.path.realpath(__file__))
+    hostpath = os.path.abspath('.')
     imagepath = os.path.join(hostpath, 'avc_images')
     resultpath = os.path.join(hostpath, 'avc_results')
+    print(imagepath, resultpath)
     subprocess.Popen(
         "NV_GPU={gpu} nvidia-docker run -d --shm-size 16G --net=host --expose={port} -p {port}:{port} "
         "-e PORT={port} -e GPU={gpu} "
