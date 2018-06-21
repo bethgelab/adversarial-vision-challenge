@@ -35,9 +35,9 @@ def test_model(directory, no_cache, gpu):
 
     # start model container
     print('##### RUNNING DOCKER CONTAINER ######')
-    port = 61220
+    port = 8989
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
-    cmd += "-e GPU={gpu} -e PORT={port} --name={cn} avc/model_submission"
+    cmd += "-e GPU={gpu} -e PORT={port} --name={cn} avc/model_submission bash run.sh"
     cmd = cmd.format(port=port, gpu=gpu, cn=container_name)
     subprocess.Popen(cmd, shell=True).wait()
 
@@ -87,17 +87,35 @@ def test_model(directory, no_cache, gpu):
     print('Performing basic checks for the code.')
     channel_axis = model.channel_axis()
 
-    print(model.bounds())
-
     assert channel_axis == 3
     assert model.bounds() == (0, 255)
 
-    # test predictions_and_gradient function
+    # test predictions
     image, label = np.random.uniform(size=(64, 64, 3)).astype(
         np.float32) * 255, 1
-    p = model.predictions(image)
 
-    assert isinstance(p, int)
+    assert isinstance(model(image), int)
+
+    # test prediction performance
+    print('### TESTING MODEL PERFORMANCE ON TEST DATA ###')
+    test_samples = adversarial_vision_challenge.utils.get_test_data()
+    correct = 0
+
+    for k, (image, label) in enumerate(test_samples):
+        print(model(image), label)
+        if model(image) == label:
+            correct += 1
+
+        if k % 20 == 1:
+            print(correct / float(k))# print('.', end="")
+
+        #if k % 100 == 0:
+        #    print(correct / float(k))
+
+    print('The top-1 performance of your model is {}%.'.format(100 * correct / float(len(test_samples))))
+
+    if correct / float(len(test_samples)) < 0.5:
+        raise IOError('The performance of your model is too low (< 50%)! Please check whether your preprocessing is correctly implemented.')
 
     print('')
     print('Test successful')
