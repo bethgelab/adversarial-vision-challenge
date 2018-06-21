@@ -24,7 +24,7 @@ from .logger import logger
 number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
 
 
-def model_server(model, port=None):
+def model_server(model):
     """Starts an HTTP server that provides access to a Foolbox model.
 
     Parameters
@@ -37,10 +37,8 @@ def model_server(model, port=None):
 
     """
 
-    if port is None:
-        port = int(os.environ.get('PORT'))
-    if port is None:
-        port = 8989
+
+    port = int(os.environ.get('PORT', default=8989))
 
     app = Flask(__name__)
 
