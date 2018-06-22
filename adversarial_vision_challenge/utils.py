@@ -5,7 +5,10 @@ import numpy as np
 import yaml
 
 from .client import TinyImageNetBSONModel
+from .retry_helper import retryable
+from .logger import logger
 
+from adversarial_vision_challenge.retry_helper import RetriesExceededError
 
 def _img_to_numpy(path):
     """
@@ -50,6 +53,18 @@ def store_adversarial(file_name, adversarial):
     np.save(path_without_extension, adversarial)
 
 
+def _wait_for_server_start(model, retried=0):
+    version = ''
+    try:
+        version = model.server_version()
+    except RetriesExceededError:
+        if 'NIPS 2018' not in version:
+            if retried < 3:
+                _wait_for_server_start(model, retried + 1)
+            else:
+                logger.error("Can't reach model server: %s.", model.base_url)
+    
+
 def load_model():
     """
         Returns an BSONModel reading the server URI and post from
@@ -59,7 +74,9 @@ def load_model():
     model_server = os.getenv('MODEL_SERVER', 'localhost')
     model_url = 'http://{0}:{1}'.format(model_server, model_port)
     model = TinyImageNetBSONModel(model_url)
+    _wait_for_server_start(model)
     return model
+    
 
 def get_test_data():
     """

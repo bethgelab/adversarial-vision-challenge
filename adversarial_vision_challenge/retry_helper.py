@@ -13,9 +13,9 @@ class RetriesExceededError(Exception):
 def retryable(func, retries=3):
     @wraps(func)
     def retry(*args, **kwargs):
-        for retried in range(retries):
+        for retried in range(retries + 1):
             if retried > 0:
-                logger.info('Retrying for the %sth time', retried)
+                logger.info('Retrying for the %s. time', retried)
                 time.sleep(3 * retried)
             try:
                 return func(*args, **kwargs)
