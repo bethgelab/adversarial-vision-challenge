@@ -27,7 +27,8 @@ install_requires = [
     'requests',
     'setuptools',
     'pyyaml',
-    'crowdai_api'
+    'crowdai_api',
+    'GitPython'
 ]
 
 tests_require = [
@@ -62,6 +63,7 @@ setup(
         'bin/avc-test-attack',
         'bin/avc-test-untargeted-attack',
         'bin/avc-test-targeted-attack',
+        'bin/avc-submit'
         ],
     include_package_data=True,
     zip_safe=False,

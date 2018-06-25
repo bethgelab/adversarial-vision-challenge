@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+
+import argparse
+import subprocess
+import uuid
+
+from git import Repo
+from distutils.util import strtobool
+import sys
+import os
+
+
+def _ask_to_continue(question):
+    sys.stdout.write('%s [y/n]\n' % question)
+    while True:
+        try:
+            return strtobool(input().lower())
+        except ValueError:
+            sys.stdout.write('Please respond with \'y\' or \'n\'.\n')
+
+
+def _is_dirty(repo):
+    is_dirty = repo.is_dirty()
+    should_continue = True
+    if is_dirty:
+        should_continue = _ask_to_continue(
+            'Your have uncommited changes to your repository. Are you sure you want to submit before pushing the latest changes?')
+        if (should_continue):
+            is_dirty = False
+    return should_continue and not is_dirty
+
+
+def _get_issues_url(repo):
+    origin = repo.remotes["origin"]
+    url = origin.url
+    if url.startswith('git@'):
+        url = origin.url.replace(
+            'git@', 'https://').replace('crowdai.org:', 'crowdai.org/')
+    url = url.replace('.git', '/issues')
+    return url
+
+
+def _submit(repo, directory, tag):
+    tag = uuid.uuid1() if tag is None else tag
+    print("Submitting using tag: {}".format(tag))
+
+    git_dir = os.path.join(directory, '.git')
+    git_config = "--git-dir={git_dir} --work-tree={work_tree}".format(
+        git_dir=git_dir, work_tree=directory)
+    cmd = "git {config} tag {tag} && git {config} push origin {tag}".format(
+        config=git_config, tag=tag)
+    subprocess.Popen(cmd, shell = True).wait()
+    print("Submitted successfully. Please check the issues page on you GitLab repository for tracking your submission:")
+    print(_get_issues_url(repo))
+
+
+if __name__ == '__main__':
+    parser=argparse.ArgumentParser()
+    parser.add_argument(
+        "directory", help="The directory containing the git repository.")
+    parser.add_argument(
+        "--tag", help="The tag to be used for the submission. A random one will be used if undefined."
+    )
+    args=parser.parse_args()
+
+    repo=Repo('.')
+    should_continue=_is_dirty(repo)
+
+    if should_continue:
+        _submit(repo, args.directory, args.tag)
+    else:
+        "Please commit & push your latest changes first before submitting."
