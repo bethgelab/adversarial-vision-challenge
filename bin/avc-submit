@@ -24,7 +24,7 @@ def _is_dirty(repo):
     should_continue = True
     if is_dirty:
         should_continue = _ask_to_continue(
-            'Your have uncommited changes to your repository. Are you sure you want to submit before pushing the latest changes?')
+            'You have uncommited changes to your repository. Are you sure you want to submit before pushing the latest changes?')
         if (should_continue):
             is_dirty = False
     return should_continue and not is_dirty
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     )
     args=parser.parse_args()
 
-    repo=Repo('.')
+    repo=Repo(args.directory)
     should_continue=_is_dirty(repo)
 
     if should_continue:
