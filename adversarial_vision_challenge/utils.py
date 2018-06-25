@@ -7,6 +7,7 @@ import yaml
 from .client import TinyImageNetBSONModel
 from .retry_helper import retryable
 from .logger import logger
+from .notifier import CrowdAiNotifier
 
 from adversarial_vision_challenge.retry_helper import RetriesExceededError
 
@@ -55,28 +56,9 @@ def store_adversarial(file_name, adversarial):
 
 def attack_complete():
     """
-        Placeholder function to announce that an attack is complete.
-        This is just to trigger an event to the signal rest of the crowdAI grader
-        as the Model is supposed to keep serving until the pod is
-        force terminated by the orchestrator.
-        When this function is called from outside the grading infrastructure,
-        this will be silently ignored.
-        This message should ideally be replaced with something along the lines
-        of :
-
-        import crowdai_api
-        crowdai_events = crowdai_api.events.CrowdAIEvents()
-        event_type = crowdai_events.CROWDAI_EVENT_INFO
-        message = "Optional Message : Attack on Model-id complete"
-        payload = {
-            "type" : "attack_complete",
-            "model_id" : "model_id_from_env_var",
-            "attack_id" : "attack_id_from_env_var",
-        }
-        crowdai_events.register_event(
-            event_type, message=message, payload=payload)
-
+        Send a notificaton to the crowd-ai backend that the attack has successfully completed.
     """
+    CrowdAiNotifier.attack_complete()
 
 
 def _wait_for_server_start(model, retried=0):

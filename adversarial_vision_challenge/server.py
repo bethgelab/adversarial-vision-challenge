@@ -17,6 +17,7 @@ from werkzeug.exceptions import TooManyRequests
 
 from . import __version__
 from .logger import logger
+from .notifier import CrowdAiNotifier
 
 
 # the number of max requests to predict for this model run
@@ -117,6 +118,7 @@ def _check_rate_limitation():
     if (number_of_max_predictions < 0):
         logger.error('Maximal number of prediction requests exceeded: %s',
                      number_of_max_predictions)
+        CrowdAiNotifier.too_many_requests()
         raise TooManyRequests(
             'Maximal number of prediction requests exceeded: {0}'.format(
                 number_of_max_predictions))
