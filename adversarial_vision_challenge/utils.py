@@ -53,6 +53,32 @@ def store_adversarial(file_name, adversarial):
     np.save(path_without_extension, adversarial)
 
 
+def attack_complete():
+    """
+        Placeholder function to announce that an attack is complete.
+        This is just to trigger an event to the signal rest of the crowdAI grader
+        as the Model is supposed to keep serving until the pod is
+        force terminated by the orchestrator.
+        When this function is called from outside the grading infrastructure,
+        this will be silently ignored.
+        This message should ideally be replaced with something along the lines
+        of :
+
+        import crowdai_api
+        crowdai_events = crowdai_api.events.CrowdAIEvents()
+        event_type = crowdai_events.CROWDAI_EVENT_INFO
+        message = "Optional Message : Attack on Model-id complete"
+        payload = {
+            "type" : "attack_complete",
+            "model_id" : "model_id_from_env_var",
+            "attack_id" : "attack_id_from_env_var",
+        }
+        crowdai_events.register_event(
+            event_type, message=message, payload=payload)
+
+    """
+
+
 def _wait_for_server_start(model, retried=0):
     version = ''
     try:

@@ -26,7 +26,8 @@ install_requires = [
     'pillow',
     'requests',
     'setuptools',
-    'pyyaml'
+    'pyyaml',
+    'crowdai_api'
 ]
 
 tests_require = [
