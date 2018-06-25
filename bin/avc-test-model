@@ -87,14 +87,14 @@ def test_model(directory, no_cache, gpu):
     print('Performing basic checks for the code.')
     channel_axis = model.channel_axis()
 
-    assert channel_axis == 3
-    assert model.bounds() == (0, 255)
+    assert channel_axis == 3, "model channel axis should be 3, but is: %s" % channel_axis
+    assert model.bounds() == (0, 255), "model bounds should be (0,255), but got: %s" % model.bounds
 
     # test predictions
     image, label = np.random.uniform(size=(64, 64, 3)).astype(
         np.float32) * 255, 1
 
-    assert isinstance(model(image), int)
+    assert isinstance(model(image), int), "prediction should be an int-value, but got: %s" % type(model(image))
 
     # test prediction performance
     print('### TESTING MODEL PERFORMANCE ON TEST DATA ###')

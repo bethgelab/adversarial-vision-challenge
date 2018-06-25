@@ -138,8 +138,8 @@ class TinyImageNetBSONModel(Model, HTTPClient):
 
     def predict(self, image):
         # image should a 64 x 64 x 3 RGB image
-        assert isinstance(image, np.ndarray)
-        assert image.shape == (64, 64, 3)
+        assert isinstance(image, np.ndarray), "input image should be an numpy array"
+        assert image.shape == (64, 64, 3), "input image should be of size 64x64x3"
         if image.dtype == np.float32:
             # we accept float32, but only if the values
             # are between 0 and 255 and we convert them
@@ -156,8 +156,8 @@ class TinyImageNetBSONModel(Model, HTTPClient):
         result = self._post('/predict', data)
 
         prediction = result['prediction']
-        assert isinstance(prediction, int)
-        assert 0 <= prediction < 200
+        assert isinstance(prediction, int), "prediction should return an int value, but got: %s" % type(prediction)
+        assert (0 <= prediction < 200), "prediction should be a value between 0 and 200, but got: %s" % prediction
         return prediction
 
     def batch_predictions(self, images):

@@ -43,7 +43,7 @@ def model_server(model):
     app = Flask(__name__)
 
     channel_axis = model.channel_axis()
-    assert channel_axis in [1, 3]
+    assert channel_axis in [1, 3], "model channel axis should be either 1 or 3"
 
     try:
         bounds = model.bounds()
@@ -58,7 +58,10 @@ def model_server(model):
     def _predict(image):
         assert isinstance(image, np.ndarray)
         assert image.shape == (64, 64, 3)
-        assert image.dtype == np.uint8
+
+        assert isinstance(image, np.ndarray), "input image should be an numpy array"
+        assert image.shape == (64, 64, 3), "input image should be of size 64x64x3"
+        assert image.dtype == np.uint8, "image should be of type np.uint8, but got: %s" % image.dtype
 
         # models (should) expect float32 arrays
         image = image.astype(np.float32)
@@ -69,10 +72,10 @@ def model_server(model):
         prediction = model.predictions(image)
 
         if isinstance(prediction, np.ndarray) and prediction.size > 1:
-            assert prediction.size == 200
+            assert prediction.size == 200, "prediction.size should be 200, but got: %s" % prediction.size
             prediction = np.argmax(prediction)
         prediction = int(prediction)
-        assert 0 <= prediction < 200
+        assert 0 <= prediction < 200, "prediction should be a value between 0 and 200, but got: %s" % prediction
         return prediction
 
     _predict = _wrap(_predict, ['prediction'])
