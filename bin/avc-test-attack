@@ -114,7 +114,7 @@ def test_attack(directory, no_cache, gpu, mode):
     resultpath = os.path.join(hostpath, 'avc_results')
     print(imagepath, resultpath)
     subprocess.Popen(
-        "NV_GPU={gpu} nvidia-docker run -d"
+        "NV_GPU={gpu} nvidia-docker run -d "
         "-e GPU={gpu} "
         "-v {imagepath}:/images/ -v {resultpath}:/results/ "
         "-e MODEL_SERVER=localhost "
