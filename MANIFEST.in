@@ -1,2 +1,4 @@
 include adversarial_vision_challenge/VERSION
 recursive-include data *.png
+include adversarial_vision_challenge/test_images/*.npy
+include adversarial_vision_challenge/test_images/labels.yml
