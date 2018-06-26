@@ -122,8 +122,8 @@ def test_attack(directory, no_cache, gpu, mode):
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name=avc_test_attack avc/test_attack_submission".format(gpu=gpu, 
-        port=port, imagepath=imagepath, resultpath=resultpath), shell=True)#.wait()
+        "--name=avc_test_attack avc/test_attack_submission bash run.sh".format(gpu=gpu, 
+        port=port, imagepath=imagepath, resultpath=resultpath), shell=True).wait()
 
     # monitor results folder to check if adversarial is written
     start_time = time.time()
