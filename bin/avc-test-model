@@ -33,11 +33,11 @@ def test_model(directory, no_cache, gpu):
     if no_cache:
         print('Not using cache for docker build. TODO NOT WORKING!')
         subprocess.Popen(
-            "repo2docker --no-run --image-name avc/model_submission --debug {}".format(directory),
+            "crowdai-repo2docker --no-run --image-name avc/model_submission --debug {}".format(directory),
             shell=True).wait()
     else:
         print('Using cache for docker build (if exists)')
-        subprocess.Popen("repo2docker --no-run --image-name avc/model_submission --debug {}".format(
+        subprocess.Popen("crowdai-repo2docker --no-run --image-name avc/model_submission --debug {}".format(
             directory), shell=True).wait()
 
     # start model container
