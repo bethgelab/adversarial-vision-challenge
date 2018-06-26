@@ -12,6 +12,12 @@ import yaml
 import time
 import os
 import sys
+import socket
+
+def _get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
 
 def test_attack(directory, no_cache, gpu, mode):
@@ -80,15 +86,18 @@ def test_attack(directory, no_cache, gpu, mode):
     print('Starting a model server')
     from adversarial_vision_challenge import model_server
 
+    # get IP
+    ip = 'localhost'
+    port = _get_free_port()
+    os.environ["PORT"] = str(port)
+    print('Using port: {}'.format(port))
+
     thread = threading.Thread(
         target=model_server,
         args=(fmodel,))
     thread.daemon = True
     thread.start()
 
-    # get IP
-    ip = 'localhost'
-    port = 8989
 
     # wait until start of model
     print('Waiting for server to start.')
@@ -105,11 +114,11 @@ def test_attack(directory, no_cache, gpu, mode):
     resultpath = os.path.join(hostpath, 'avc_results')
     print(imagepath, resultpath)
     subprocess.Popen(
-        "NV_GPU={gpu} nvidia-docker run -d --shm-size 16G --net=host --expose={port} -p {port}:{port} "
-        "-e PORT={port} -e GPU={gpu} "
+        "NV_GPU={gpu} nvidia-docker run -d --expose={port} -p {port}:{port} "
+        "-e GPU={gpu} "
         "-v {imagepath}:/images/ -v {resultpath}:/results/ "
         "-e MODEL_SERVER=localhost "
-        "-e MODEL_PORT=8989 "
+        "-e MODEL_PORT={port} "
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "

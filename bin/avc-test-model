@@ -12,6 +12,13 @@ import yaml
 import time
 import os
 import sys
+import socket
+
+
+def _get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
 
 def test_model(directory, no_cache, gpu):
@@ -35,7 +42,8 @@ def test_model(directory, no_cache, gpu):
 
     # start model container
     print('##### RUNNING DOCKER CONTAINER ######')
-    port = 8989
+    port = _get_free_port()
+    print('using port: {}'.format(port))
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
     cmd += "-e GPU={gpu} -e PORT={port} --name={cn} avc/model_submission bash run.sh"
     cmd = cmd.format(port=port, gpu=gpu, cn=container_name)
