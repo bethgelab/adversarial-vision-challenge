@@ -114,7 +114,7 @@ def test_attack(directory, no_cache, gpu, mode):
     resultpath = os.path.join(hostpath, 'avc_results')
     print(imagepath, resultpath)
     subprocess.Popen(
-        "NV_GPU={gpu} nvidia-docker run -d --net=host "
+        "NV_GPU={gpu} nvidia-docker run  --net=host "
         "-e GPU={gpu} "
         "-v {imagepath}:/images/ -v {resultpath}:/results/ "
         "-e MODEL_SERVER=localhost "
@@ -122,15 +122,15 @@ def test_attack(directory, no_cache, gpu, mode):
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name=avc_test_attack avc/test_attack_submission".format(gpu=gpu, 
-        port=port, imagepath=imagepath, resultpath=resultpath), shell=True).wait()
+        "--name=avc_test_attack -it avc/test_attack_submission".format(gpu=gpu, 
+        port=port, imagepath=imagepath, resultpath=resultpath), shell=True)#.wait()
 
     # monitor results folder to check if adversarial is written
     start_time = time.time()
 
     while not os.path.isfile('avc_results/img0.npy') and time.time() - start_time < 20:
         time.sleep(1)
-
+    
     # catch timeout
     if not os.path.isfile('avc_results/img0.npy'):
         raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
