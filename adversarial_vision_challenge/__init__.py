@@ -11,3 +11,4 @@ from .utils import read_images  # noqa: F401
 from .utils import store_adversarial  # noqa: F401
 from .utils import get_test_data  # noqa: F401
 from .utils import attack_complete # noqa: F401
+from .notifier import ModelNotifications, AttackNotifications # noqa: F401
