@@ -3,12 +3,12 @@ import crowdai_api
 from enum import Enum
 
 
-class ModelNotifications(Enum):
+class ModelNotifications:
     TYPE = "MODEL"
     TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS_ERROR"
 
 
-class AttackNotifications(Enum):
+class AttackNotifications:
     TYPE = "ATTACK"
     COMPLETE = "ATTACK_COMPLETE"
     RETRIES_EXCEEDED = "RETRIES_EXCEEDED_ERROR"
