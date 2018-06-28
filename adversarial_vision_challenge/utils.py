@@ -20,7 +20,6 @@ def _img_to_numpy(path):
     image = np.load(path)
     image = np.asarray(image, dtype=np.float32)
     image = image[:, :, :3]
-    image = image / 255
     return image
 
 def _read_image(file_name):
@@ -35,7 +34,9 @@ def _read_image(file_name):
 def read_images():
     """
         Returns a list containing tuples of images as numpy arrays
-        and the correspoding true label.
+        and the correspoding label.
+        In case of an untargeted attack the label is the ground truth label.
+        In case of a targeted attack the label is the target label.
     """
     filepath = os.getenv('INPUT_YML_PATH')
     with open(filepath, 'r') as ymlfile:
