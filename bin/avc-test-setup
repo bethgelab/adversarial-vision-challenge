@@ -12,6 +12,8 @@ try:
 except ImportError:
     from pip._vendor.packaging.version import parse
 
+print('Your are using Python v{}.{}'.format(*sys.version_info[:2]))
+
 # 1. test that the correct repo2docker is installed
 
 # 2. test that latest adversarial vision challenge is installed

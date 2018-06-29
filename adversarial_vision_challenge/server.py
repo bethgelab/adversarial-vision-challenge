@@ -39,7 +39,7 @@ def model_server(model):
     """
 
 
-    port = int(os.environ.get('MODEL_PORT', default=8989))
+    port = int(os.environ.get('MODEL_PORT', 8989))
 
     app = Flask(__name__)
 
