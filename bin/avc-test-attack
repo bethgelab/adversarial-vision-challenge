@@ -51,13 +51,16 @@ def test_attack(directory, no_cache, gpu, mode):
             shutil.rmtree(folder)
             os.makedirs(folder)
 
-    # write a single source image into image directory
-    image, _ = foolbox.utils.imagenet_example()
-    image, label = image[:64, :64], 53
-    np.save("avc_images/img0.npy".format(directory), image)
+    # write source images for testing into image directory
+    test_samples = adversarial_vision_challenge.utils.get_test_data()
+    labels = {}
+
+    for k, (image, label) in enumerate(test_samples):
+        np.save("avc_images/img{}.npy".format(k), image)
+        labels['img{}.npy'.format(k)] = label
     
-    with open('avc_images/labels.yml'.format(directory), 'w') as outfile:
-        yaml.dump({'img0.npy' : label}, outfile)
+    with open('avc_images/labels.yml', 'w') as outfile:
+        yaml.dump(labels, outfile)
 
     # start mock model
     class MockModel(foolbox.models.Model):
@@ -69,15 +72,18 @@ def test_attack(directory, no_cache, gpu, mode):
             self.original = original
             self.label = label
             self.untargeted = mode == 'untargeted'
+            self.calls = 0
 
         def predictions(self, image):
             # if distance is small return correct label, else return wrong label
+            self.calls += 1
             if np.linalg.norm(self.original - image) < 10:
                 return self.label if self.untargeted else (self.label + 1) % 200
             else:
                 return (self.label + 1) % 200 if self.untargeted else self.label
 
         def batch_predictions(self, batch):
+            self.calls += batch.shape[0]
             label = self.predictions(batch[0])
             return [label]
 
@@ -132,17 +138,37 @@ def test_attack(directory, no_cache, gpu, mode):
     # monitor results folder to check if adversarial is written
     start_time = time.time()
 
-    while not os.path.isfile('avc_results/img0.npy') and time.time() - start_time < 20:
-        time.sleep(1)
-    
-    # catch timeout
-    if not os.path.isfile('avc_results/img0.npy'):
-        raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
-    else:
-        print('')
-        print('Test successful')
-        print('')
-        sys.exit()
+    while True:
+        time.sleep(5)
+        result_files = os.listdir('avc_results/')
+        print('{} result files written after {} seconds.'.format(len(result_files), int(time.time() - start_time)))
+
+        if len(result_files) == 0 and time.time() - start_time > 19:
+            raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
+
+        if (time.time() - start_time) / float(len(result_files)) > 10:
+            raise RuntimeError('Your attack is too slow (> 10 seconds / sample)!')
+
+        if len(result_files) == len(test_samples):
+            break
+
+        if 'avc_test_attack' in str(subprocess.check_output('docker ps -a --latest', shell=True)):
+            print("""Your container stopped running before all images were processed. 
+                This either means that the attack was not able to produce adversarials 
+                for all samples or that the attack stopped because of runtime errors.
+                """
+                )
+            break
+
+    if len(result_files) < len(test_samples) / 2:
+        raise RuntimeError('The attack produced results for less then 50\% of the samples ({}/{}).'.format(len(result_files), len(test_samples)))
+
+    print('The model was called {} times (maximum allowed: {})'.format(fmodel.calls, len(test_samples) * 1000))
+
+    print('')
+    print('Test successful')
+    print('')
+    sys.exit()
 
 
 if __name__ == '__main__':
