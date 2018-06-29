@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+from future.moves.urllib import request
+from distutils.version import LooseVersion
+import packaging.version
+import adversarial_vision_challenge
+import requests
+import json
+import sys
+try:
+    from packaging.version import parse
+except ImportError:
+    from pip._vendor.packaging.version import parse
+
+# 1. test that the correct repo2docker is installed
+
+# 2. test that latest adversarial vision challenge is installed
+if sys.version_info[0] == 3:
+	data = json.loads(request.urlopen('https://pypi.python.org/pypi/adversarial-vision-challenge/json').readall().decode('utf-8'))
+else:
+	data = json.loads(request.urlopen('https://pypi.python.org/pypi/adversarial-vision-challenge/json').read())
+latest_version = max([LooseVersion(release) for release in data['releases'] if not packaging.version.parse(release).is_prerelease])
+
+current_version = adversarial_vision_challenge.__version__
+
+if latest_version > LooseVersion(current_version):
+	raise AssertionError("""Your version of the adversarial-vision-challenge ({}) 
+		does not match the latest version ({}). Please make
+		sure you are using the latest version, e.g. using pip:
+
+		pip install --upgrade adversarial_vision_challenge
+
+		before you proceed.
+		""".format(current_version, latest_version)
+		)
+else:
+	print('Latest version of adversarial-vision-challenge package is installed.')
+
+# 3. test that upt file exists (to install git)

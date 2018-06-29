@@ -28,7 +28,9 @@ install_requires = [
     'setuptools',
     'pyyaml',
     'crowdai_api',
-    'GitPython'
+    'GitPython',
+    'packaging',
+    'future',
 ]
 
 tests_require = [
@@ -59,6 +61,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     scripts=[
+        'bin/avc-test-setup',
         'bin/avc-test-model',
         'bin/avc-test-attack',
         'bin/avc-test-untargeted-attack',

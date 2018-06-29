@@ -23,6 +23,9 @@ def _get_free_port():
 
 def test_model(directory, no_cache, gpu):
     print('##### START CHECK ######')
+    print('performing basic setup tests')
+    subprocess.Popen('avc-test-setup', shell=True).wait()
+
     print('Analyzing model in folder "{}"'.format(directory))
 
     # remove old container if exists
