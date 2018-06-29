@@ -89,7 +89,7 @@ def test_attack(directory, no_cache, gpu, mode):
     # get IP
     ip = 'localhost'
     port = _get_free_port()
-    os.environ["PORT"] = str(port)
+    os.environ["MODEL_PORT"] = str(port)
     print('Using port: {}'.format(port))
 
     thread = threading.Thread(

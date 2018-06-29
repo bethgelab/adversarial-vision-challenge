@@ -45,7 +45,7 @@ def test_model(directory, no_cache, gpu):
     port = _get_free_port()
     print('using port: {}'.format(port))
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
-    cmd += "-e GPU={gpu} -e PORT={port} --name={cn} avc/model_submission bash run.sh"
+    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} avc/model_submission bash run.sh"
     cmd = cmd.format(port=port, gpu=gpu, cn=container_name)
     subprocess.Popen(cmd, shell=True).wait()
 

@@ -33,7 +33,7 @@ def model_server(model):
     model : `foolbox.model.Model` instance
         The model that should be run.
     port : int
-        The TCP port used by the HTTP server. Defaults to the PORT environment
+        The TCP port used by the HTTP server. Defaults to the MODEL_PORT environment
         variable or 8989 if not set.
 
     """
