@@ -20,8 +20,9 @@ class CrowdAiNotifier():
     def _send_notification(event_type, message, payload={}):
         crowdai_events = crowdai_api.events.CrowdAIEvents()
         default_payload = {"challenge_id": "NIPS18_AVC"}
-        final_payload = default_payload.update(payload)
-        crowdai_events.register_event(event_type, message, final_payload)
+        default_payload.update(payload)
+        print("Sending payload : ", payload)
+        crowdai_events.register_event(event_type, message, payload)
 
     # ~~~~~~~~~~~~~~~~ ATTACK NOTIFICATIONS ~~~~~~~~~~~~~~~~
     @staticmethod
