@@ -12,7 +12,7 @@ class AttackNotifications:
     TYPE = "AVC.ATTACK"
     COMPLETE = "AVC.ATTACK.COMPLETE"
     RETRIES_EXCEEDED = "AVC.ATTACK.RETRIES_EXCEEDED_ERROR"
-
+    STORE_ADVERSARIAL = "AVC.ATTACK.STORE_ADVERSARIAL"
 
 class CrowdAiNotifier():
 
@@ -24,6 +24,16 @@ class CrowdAiNotifier():
         crowdai_events.register_event(event_type, message, final_payload)
 
     # ~~~~~~~~~~~~~~~~ ATTACK NOTIFICATIONS ~~~~~~~~~~~~~~~~
+    @staticmethod
+    def store_adversarial(filename):
+        CrowdAiNotifier._send_notification(
+            event_type=AttackNotifications.STORE_ADVERSARIAL,
+            message="",
+            payload={
+                "type": AttackNotifications.TYPE,
+                "filename" : filename
+            }
+        )
 
     @staticmethod
     def attack_complete():

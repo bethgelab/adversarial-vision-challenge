@@ -53,7 +53,7 @@ def store_adversarial(file_name, adversarial):
     path = os.path.join(output_folder, file_name)
     path_without_extension = os.path.splitext(path)[0]
     np.save(path_without_extension, adversarial)
-
+    CrowdAiNotifier.store_adversarial(file_name)
 
 def attack_complete():
     """
@@ -72,7 +72,7 @@ def _wait_for_server_start(model, retried=0):
                 _wait_for_server_start(model, retried + 1)
             else:
                 logger.error("Can't reach model server: %s.", model.base_url)
-    
+
 
 def load_model():
     """
@@ -85,7 +85,7 @@ def load_model():
     model = TinyImageNetBSONModel(model_url)
     _wait_for_server_start(model)
     return model
-    
+
 
 def get_test_data():
     """
