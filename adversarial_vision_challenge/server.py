@@ -22,7 +22,7 @@ from .notifier import CrowdAiNotifier
 
 # the number of max requests to predict for this model run
 # based on the # of images to predict
-number_of_max_predictions = int(os.environ.get('NUM_OF_IMAGES', 100)) * 1000
+number_of_max_predictions = int(os.environ.get('NUM_OF_MAX_PREDICTIONS', 100)) * 1000
 
 
 def model_server(model):
@@ -39,7 +39,7 @@ def model_server(model):
     """
 
 
-    port = int(os.environ.get('PORT', default=8989))
+    port = int(os.environ.get('MODEL_PORT', default=8989))
 
     app = Flask(__name__)
 
