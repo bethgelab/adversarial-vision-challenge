@@ -52,7 +52,7 @@ def test_attack(directory, no_cache, gpu, mode):
             os.makedirs(folder)
 
     # write source images for testing into image directory
-    test_samples = adversarial_vision_challenge.utils.get_test_data()
+    test_samples = adversarial_vision_challenge.utils.get_test_data()[:100]
     labels = {}
 
     for k, (image, label) in enumerate(test_samples):
@@ -62,36 +62,47 @@ def test_attack(directory, no_cache, gpu, mode):
     with open('avc_images/labels.yml', 'w') as outfile:
         yaml.dump(labels, outfile)
 
-    # start mock model
+    # start simple nearest neighbour mock model
     class MockModel(foolbox.models.Model):
 
-        def __init__(self, original, label, mode):
+        def __init__(self, mode):
             super(MockModel, self).__init__(bounds=(0, 255),
                                             channel_axis=3,
                                             preprocessing=(1, 1))
-            self.original = original
-            self.label = label
+            self.samples = test_samples
+            self.S = np.stack([sample[0] for sample in test_samples]).reshape((len(test_samples), -1))[:, :1000]
             self.untargeted = mode == 'untargeted'
             self.calls = 0
 
         def predictions(self, image):
             # if distance is small return correct label, else return wrong label
             self.calls += 1
-            if np.linalg.norm(self.original - image) < 10:
-                return self.label if self.untargeted else (self.label + 1) % 200
+
+            # get sample with minimum distance to image
+            distances = np.linalg.norm(self.S - image.flatten()[:1000][None], axis=1)
+            distance = np.amin(distances)
+
+            if self.untargeted:
+                if distance < 50:
+                    return self.samples[np.argmin(distances)][1]
+                else:
+                    return (self.samples[np.argmin(distances)][1] + 30) % 200
             else:
-                return (self.label + 1) % 200 if self.untargeted else self.label
+                if distance < 50:
+                    return (self.samples[np.argmin(distances)][1] + 30) % 200
+                else:
+                    return self.samples[np.argmin(distances)][1]
+                    
 
         def batch_predictions(self, batch):
             self.calls += batch.shape[0]
-            label = self.predictions(batch[0])
-            return [label]
+            return [self.predictions(image) for image in batch]
 
         def num_classes(self):
             return 200
 
     print('Creating a mock model')
-    fmodel = MockModel(image, label, mode)
+    fmodel = MockModel(mode)
 
     print('Starting a model server')
     from adversarial_vision_challenge import model_server
@@ -145,14 +156,13 @@ def test_attack(directory, no_cache, gpu, mode):
 
         if len(result_files) == 0 and time.time() - start_time > 19:
             raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
-
-        if (time.time() - start_time) / float(len(result_files)) > 10:
+        elif time.time() - start_time > 21 and (time.time() - start_time) / float(len(result_files)) > 10:
             raise RuntimeError('Your attack is too slow (> 10 seconds / sample)!')
 
         if len(result_files) == len(test_samples):
             break
 
-        if 'avc_test_attack' in str(subprocess.check_output('docker ps -a --latest', shell=True)):
+        if 'avc_test_attack' not in str(subprocess.check_output('docker ps', shell=True)):
             print("""Your container stopped running before all images were processed. 
                 This either means that the attack was not able to produce adversarials 
                 for all samples or that the attack stopped because of runtime errors.
@@ -163,7 +173,23 @@ def test_attack(directory, no_cache, gpu, mode):
     if len(result_files) < len(test_samples) / 2:
         raise RuntimeError('The attack produced results for less then 50\% of the samples ({}/{}).'.format(len(result_files), len(test_samples)))
 
-    print('The model was called {} times (maximum allowed: {})'.format(fmodel.calls, len(test_samples) * 1000))
+    # check that the number of calls is below maximum
+    if fmodel.calls < len(test_samples) * 1000:
+        print('Your attack queried the model {} times (maximum allowed: {})'.format(fmodel.calls, len(test_samples) * 1000))
+    else:
+        raise RuntimeError('Your attack queried the model {} too many times (maximum allowed: {})!'.format(fmodel.calls, len(test_samples) * 1000))
+
+    # check whether results are truly adversarials and report median distance
+    distances = []
+
+    for file in os.listdir('avc_results/'):
+        original = np.load('avc_images/{}'.format(file)).astype(np.float64)
+        adversarial = np.load('avc_results/{}'.format(file)).astype(np.float64)
+        distances.append(np.linalg.norm(original - adversarial))
+
+    distances = np.array(distances)
+    print('Number of adversarials {} of {}'.format((distances > 50).sum(), distances.shape[0]))
+    print('Median adversarial distances: {} (optimum = 50)'.format(np.median(distances[distances > 50])))
 
     print('')
     print('Test successful')
@@ -172,6 +198,9 @@ def test_attack(directory, no_cache, gpu, mode):
 
 
 if __name__ == '__main__':
+    # set log file
+    os.environ["LOG_FILE"] = 'avc.log'
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "directory", help="The directory containing the Dockerfile.")
