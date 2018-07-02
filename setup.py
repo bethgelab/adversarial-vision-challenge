@@ -48,7 +48,7 @@ scripts = [
     'bin/avc-test-untargeted-attack',
     'bin/avc-test-targeted-attack',
     'bin/avc-submit'
-] if (sys.version_info[0] == 3 and sys.version_info[1] > 4) else  []
+] if (sys.version_info[0] == 3 and sys.version_info[1] >= 4) else  []
 
 setup(
     name="adversarial_vision_challenge",
