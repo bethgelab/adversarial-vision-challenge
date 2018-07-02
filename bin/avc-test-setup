@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from future.moves.urllib import request
 from distutils.version import LooseVersion
@@ -16,6 +16,13 @@ except ImportError:
 print('Basic setup tests')
 print('-----------------')
 print('Python version: {}.{}'.format(sys.version_info[0], sys.version_info[1]))
+
+# 0. check if AVC lib is installed
+try:
+	import adversarial_vision_challenge
+except ImportError:
+	raise AssertionError('Please make sure to have "adversarial_vision_challenge" installed for python3 on your system.')
+
 
 # 1. check if docker is installed
 from distutils.spawn import find_executable
