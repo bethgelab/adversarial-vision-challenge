@@ -31,7 +31,7 @@ install_requires = [
     'GitPython',
     'packaging',
     'future',
-    'crowdai-repo2docker',
+    "crowdai-repo2docker ; python_version<'3.4'",
     'tqdm'
 ]
 
