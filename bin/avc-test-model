@@ -13,7 +13,10 @@ import time
 import os
 import sys
 import socket
+from tqdm import tqdm
 
+def checkmark():
+    print(u' \u2713')
 
 def _get_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -22,35 +25,43 @@ def _get_free_port():
 
 
 def test_model(directory, no_cache, gpu):
-    print('##### START CHECK ######')
-    print('performing basic setup tests')
-    subprocess.Popen('avc-test-setup', shell=True).wait()
+    image_name = 'avc/model_submission'
+    container_name = 'avc_test_model_submission'
 
-    print('Analyzing model in folder "{}"'.format(directory))
+    subprocess.check_call('avc-test-setup', shell=True)
+
+    print()
+    print('Building docker image of submission')
+    print('-----------------------------------')
+
+    print('Submission folder: "{}"'.format(directory))
+
+    # build image
+    if no_cache:
+        print('Building image (without cache)...')
+        raise AssertionError('Option does not yet exist because repo2docker does not allow us to build without cache.')
+        subprocess.check_call(
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(image_name, directory),
+            shell=True)
+    else:
+        print('Building image from cache (if exists)...', end="")
+        subprocess.check_call("crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+            image_name, directory), shell=True)
+        checkmark()
 
     # remove old container if exists
-    container_name = 'avc_test_model_submission'
-    subprocess.Popen("docker rm -f {cn}".format(cn=container_name), shell=True).wait()
-
-    # build container
-    if no_cache:
-        print('Not using cache for docker build. TODO NOT WORKING!')
-        subprocess.Popen(
-            "crowdai-repo2docker --no-run --image-name avc/model_submission --debug {}".format(directory),
-            shell=True).wait()
-    else:
-        print('Using cache for docker build (if exists)')
-        subprocess.Popen("crowdai-repo2docker --no-run --image-name avc/model_submission --debug {}".format(
-            directory), shell=True).wait()
+    if container_name in str(subprocess.check_output('docker ps -a', shell=True)):
+        print('Removing existing submission container...', end="")
+        subprocess.check_call("docker rm -f {cn}".format(cn=container_name), shell=True)
+        checkmark()
 
     # start model container
-    print('##### RUNNING DOCKER CONTAINER ######')
     port = _get_free_port()
-    print('using port: {}'.format(port))
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
-    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} avc/model_submission bash run.sh"
-    cmd = cmd.format(port=port, gpu=gpu, cn=container_name)
-    subprocess.Popen(cmd, shell=True).wait()
+    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash run.sh"
+    cmd = cmd.format(port=port, gpu=gpu, cn=container_name, im=image_name)
+    print('Starting container on port {} using the command \n \n {}'.format(port, cmd))
+    subprocess.check_call(cmd, shell=True)
 
     # attach to container to print output in case of failures
     cmd = "docker attach {}".format(container_name)
@@ -65,7 +76,7 @@ def test_model(directory, no_cache, gpu):
     print('Received IP of server: ', ip)
 
     # wait until start of server
-    print('Waiting for server to start.')
+    print('Waiting for server to start...', end="")
     for i in range(30):
         # check if the server is up
         cmd = 'wget -qO - --tries 2 --retry-connrefused http://{}:{}'
@@ -88,40 +99,38 @@ def test_model(directory, no_cache, gpu):
             p.wait()
             return exit(int(p.stdout.read().decode('UTF-8').strip()))
 
+    checkmark()
+
     # start client model
-    print('##### CONNECTING TO THE RUNNING SERVER ######')
+    print('Connecting to model sever...', end="")
     model = adversarial_vision_challenge.TinyImageNetBSONModel('http://{}:{}'.format(ip, port))
+    checkmark()
 
     print('Server version', model.server_version())
-
     # get predictions and/or gradient for model
-    print('Performing basic checks for the code.')
+    print('Checking model axis and bounds...', end="")
     channel_axis = model.channel_axis()
 
     assert channel_axis == 3, "model channel axis should be 3, but is: %s" % channel_axis
     assert model.bounds() == (0, 255), "model bounds should be (0,255), but got: %s" % model.bounds
+    checkmark()
 
     # test predictions
+    print('Checking return value...', end="")
     image, label = np.random.uniform(size=(64, 64, 3)).astype(
         np.float32) * 255, 1
 
     assert isinstance(model(image), int), "prediction should be an int-value, but got: %s" % type(model(image))
+    checkmark()
 
     # test prediction performance
-    print('### TESTING MODEL PERFORMANCE ON TEST DATA ###')
+    print('Testing model accuracy on test samples...')
     test_samples = adversarial_vision_challenge.utils.get_test_data()
     correct = 0
 
-    for k, (image, label) in enumerate(test_samples):
-        print(model(image), label)
+    for image, label in tqdm(test_samples):
         if model(image) == label:
             correct += 1
-
-        if k % 20 == 1:
-            print(correct / float(k))# print('.', end="")
-
-        #if k % 100 == 0:
-        #    print(correct / float(k))
 
     print('The top-1 performance of your model is {}%.'.format(100 * correct / float(len(test_samples))))
 
@@ -129,7 +138,7 @@ def test_model(directory, no_cache, gpu):
         raise IOError('The performance of your model is too low (< 50%)! Please check whether your preprocessing is correctly implemented.')
 
     print('')
-    print('Test successful')
+    print('All tests successful, have fun submitting!')
     print('')
     sys.exit()
 
