@@ -111,7 +111,7 @@ def model_server(model):
         _shutdown_server()
         return 'Shutting down ...'
 
-    print('starting server on port {}'.format(port))
+    logger.info('starting server on port {}'.format(port))
     app.run(host='0.0.0.0', port=port)
 
 
