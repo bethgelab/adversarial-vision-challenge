@@ -103,7 +103,7 @@ def model_server(model):
         start = timeit.default_timer()
         prediction = _predict(request)
         end = timeit.default_timer()
-        logger.info('prediction took: %s s', (end - start))
+        logger.debug('prediction took: %s s', (end - start))
         return prediction
 
     @app.route("/shutdown", methods=['GET'])
