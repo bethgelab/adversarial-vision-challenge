@@ -3,6 +3,7 @@ from setuptools import find_packages
 from os.path import join, dirname
 # We need io.open() (Python 3's default open) to specify file encodings
 import io
+import sys
 
 with open(join(dirname(__file__), 'adversarial_vision_challenge/VERSION')) as f:
     version = f.read().strip()
@@ -31,7 +32,7 @@ install_requires = [
     'GitPython',
     'packaging',
     'future',
-    'crowdai-repo2docker',
+    "crowdai-repo2docker ; python_version<'3.4'",
     'tqdm'
 ]
 
@@ -39,6 +40,15 @@ tests_require = [
     'pytest',
     'pytest-cov',
 ]
+
+scripts = [
+    'bin/avc-test-setup',
+    'bin/avc-test-model',
+    'bin/avc-test-attack',
+    'bin/avc-test-untargeted-attack',
+    'bin/avc-test-targeted-attack',
+    'bin/avc-submit'
+] if (sys.version_info[0] == 3 and sys.version_info[1] >= 4) else  []
 
 setup(
     name="adversarial_vision_challenge",
@@ -62,14 +72,7 @@ setup(
     url="https://github.com/bethgelab/adversarial-vision-challenge",
     license="MIT",
     packages=find_packages(),
-    scripts=[
-        'bin/avc-test-setup',
-        'bin/avc-test-model',
-        'bin/avc-test-attack',
-        'bin/avc-test-untargeted-attack',
-        'bin/avc-test-targeted-attack',
-        'bin/avc-submit'
-        ],
+    scripts=scripts,
     include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
