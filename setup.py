@@ -41,14 +41,16 @@ tests_require = [
     'pytest-cov',
 ]
 
-scripts = [
+binaries =  [] if sys.version_info < (3,4) else [
     'bin/avc-test-setup',
     'bin/avc-test-model',
     'bin/avc-test-attack',
     'bin/avc-test-untargeted-attack',
     'bin/avc-test-targeted-attack',
     'bin/avc-submit'
-] if (sys.version_info[0] == 3 and sys.version_info[1] >= 4) else  []
+]
+
+print("installing binaries: ", binaries)
 
 setup(
     name="adversarial_vision_challenge",
@@ -72,7 +74,7 @@ setup(
     url="https://github.com/bethgelab/adversarial-vision-challenge",
     license="MIT",
     packages=find_packages(),
-    scripts=scripts,
+    scripts=binaries,
     include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
