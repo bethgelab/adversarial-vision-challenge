@@ -43,6 +43,11 @@ def model_server(model):
 
     app = Flask(__name__)
 
+    # disable verbose flask loggig
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+
     channel_axis = model.channel_axis()
     assert channel_axis in [1, 3], "model channel axis should be either 1 or 3"
 
