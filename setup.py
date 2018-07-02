@@ -50,6 +50,7 @@ binaries =  [] if sys.version_info < (3,4) else [
     'bin/avc-submit'
 ]
 
+print("running with py ", sys.version_info)
 print("installing binaries: ", binaries)
 
 setup(
