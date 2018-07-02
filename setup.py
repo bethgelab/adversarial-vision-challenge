@@ -31,6 +31,8 @@ install_requires = [
     'GitPython',
     'packaging',
     'future',
+    'crowdai-repo2docker',
+    'tqdm'
 ]
 
 tests_require = [

@@ -43,6 +43,11 @@ def model_server(model):
 
     app = Flask(__name__)
 
+    # disable verbose flask loggig
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+
     channel_axis = model.channel_axis()
     assert channel_axis in [1, 3], "model channel axis should be either 1 or 3"
 
@@ -98,7 +103,7 @@ def model_server(model):
         start = timeit.default_timer()
         prediction = _predict(request)
         end = timeit.default_timer()
-        logger.info('prediction took: %s s', (end - start))
+        logger.debug('prediction took: %s s', (end - start))
         return prediction
 
     @app.route("/shutdown", methods=['GET'])
@@ -106,7 +111,7 @@ def model_server(model):
         _shutdown_server()
         return 'Shutting down ...'
 
-    print('starting server on port {}'.format(port))
+    logger.info('starting server on port {}'.format(port))
     app.run(host='0.0.0.0', port=port)
 
 
