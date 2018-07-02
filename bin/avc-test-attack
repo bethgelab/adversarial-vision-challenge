@@ -13,6 +13,10 @@ import time
 import os
 import sys
 import socket
+from tqdm import tqdm
+
+def checkmark():
+    print(u' \u2713')
 
 def _get_free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,28 +25,39 @@ def _get_free_port():
     s.close()
     return port
 
-def test_attack(directory, no_cache, gpu, mode):
-    print('##### START CHECK ######')
-    print('performing basic setup tests')
-    subprocess.Popen('avc-test-setup', shell=True).wait()
+def test_attack(directory, no_cache, gpu, mode, samples):
+    image_name = 'avc/attack_submission'
+    container_name = 'avc_test_attack_submission'
 
-    print('Analyzing attack in folder "{}"'.format(directory))
+    subprocess.check_call('avc-test-setup', shell=True)
+
+    print()
+    print('Building docker image of submission')
+    print('-----------------------------------')
+
+    print('Submission folder: "{}"'.format(directory))
+
+    # build image
+    if no_cache:
+        print('Building image (without cache)...')
+        raise AssertionError('Option does not yet exist because repo2docker does not allow us to build without cache.')
+        subprocess.check_call(
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(image_name, directory),
+            shell=True)
+    else:
+        print('Building image from cache (if exists)...', end="")
+        subprocess.check_call("crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+            image_name, directory), shell=True)
+        checkmark()
 
     # remove old container if exists
-    subprocess.Popen("docker rm -f avc_test_attack", shell=True).wait()
-
-    # build container
-    if no_cache:
-        print('Not using cache for docker build. TODO NOT WORKING!')
-        subprocess.Popen(
-            "crowdai-repo2docker --no-run --image-name avc/test_attack_submission --debug {}".format(directory),
-            shell=True).wait()
-    else:
-        print('Using cache for docker build (if exists)')
-        subprocess.Popen("crowdai-repo2docker --no-run --image-name avc/test_attack_submission --debug {}".format(
-            directory), shell=True).wait()
+    if container_name in str(subprocess.check_output('docker ps -a', shell=True)):
+        print('Removing existing submission container...', end="")
+        subprocess.check_call("docker rm -f {cn}".format(cn=container_name), shell=True)
+        checkmark()
 
     # build local temporary directories to read sample images and write adversarials
+    print('Creating empty folders for test samples and results...', end="")
     for folder in ['avc_images/', 'avc_results/']:
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -51,8 +66,11 @@ def test_attack(directory, no_cache, gpu, mode):
             shutil.rmtree(folder)
             os.makedirs(folder)
 
+    checkmark()
+
     # write source images for testing into image directory
-    test_samples = adversarial_vision_challenge.utils.get_test_data()[:100]
+    print('Saving test samples into samples_folder (default: avc_images/)...', end="")
+    test_samples = adversarial_vision_challenge.utils.get_test_data()[:samples]
     labels = {}
 
     for k, (image, label) in enumerate(test_samples):
@@ -61,6 +79,8 @@ def test_attack(directory, no_cache, gpu, mode):
     
     with open('avc_images/labels.yml', 'w') as outfile:
         yaml.dump(labels, outfile)
+
+    checkmark()
 
     # start simple nearest neighbour mock model
     class MockModel(foolbox.models.Model):
@@ -101,17 +121,17 @@ def test_attack(directory, no_cache, gpu, mode):
         def num_classes(self):
             return 200
 
-    print('Creating a mock model')
+    print('Creating a mock model...', end="")
     fmodel = MockModel(mode)
+    checkmark()
 
-    print('Starting a model server')
     from adversarial_vision_challenge import model_server
 
     # get IP
     ip = 'localhost'
     port = _get_free_port()
     os.environ["MODEL_PORT"] = str(port)
-    print('Using port: {}'.format(port))
+    print('Starting a model server at {}:{}...'.format(ip, port), end="")
 
     thread = threading.Thread(
         target=model_server,
@@ -119,21 +139,21 @@ def test_attack(directory, no_cache, gpu, mode):
     thread.daemon = True
     thread.start()
 
-
     # wait until start of model
-    print('Waiting for server to start.')
+    print('Waiting for server to start...', end="")
     cmd = 'wget -qO - --tries 30 --retry-connrefused http://{}:{}'.format(
         ip, port)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     response = p.stdout.read()[:-1].decode('UTF-8')
     assert response == "NIPS 2018 Adversarial Vision Challenge Model Server"
 
+    checkmark()
+
     # start attack container
-    print('Starting attack container')
+    print('Starting attack container...', end="")
     hostpath = os.path.abspath('.')
     imagepath = os.path.join(hostpath, 'avc_images')
     resultpath = os.path.join(hostpath, 'avc_results')
-    print(imagepath, resultpath)
     subprocess.Popen(
         "NV_GPU={gpu} nvidia-docker run  -d --net=host "
         "-e GPU={gpu} "
@@ -143,32 +163,44 @@ def test_attack(directory, no_cache, gpu, mode):
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name=avc_test_attack avc/test_attack_submission bash run.sh".format(gpu=gpu, 
-        port=port, imagepath=imagepath, resultpath=resultpath), shell=True).wait()
+        "--name={cn} {im} bash run.sh".format(gpu=gpu, 
+        port=port, imagepath=imagepath, resultpath=resultpath, cn=container_name, im=image_name), shell=True).wait()
+
+    checkmark()
 
     # monitor results folder to check if adversarial is written
+    print('Starting to test attack against mock model and test samples...')
+    print("If you'd like to test with less or more samples, append e.g --samples 50 to your avc-test-XXX command.")
     start_time = time.time()
 
-    while True:
-        time.sleep(5)
-        result_files = os.listdir('avc_results/')
-        print('{} result files written after {} seconds.'.format(len(result_files), int(time.time() - start_time)))
+    with tqdm(total=len(test_samples)) as pbar:
+        while True:
+            time.sleep(1)
+            result_files = os.listdir('avc_results/')
+            num_results = len(result_files)
+            # print('{} result files written after {} seconds.'.format(len(result_files), int(time.time() - start_time)))
 
-        if len(result_files) == 0 and time.time() - start_time > 19:
-            raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
-        elif time.time() - start_time > 21 and (time.time() - start_time) / float(len(result_files)) > 10:
-            raise RuntimeError('Your attack is too slow (> 10 seconds / sample)!')
+            # update progress bar
+            if pbar.n < num_results:
+                pbar.update(num_results - pbar.n)
 
-        if len(result_files) == len(test_samples):
-            break
+            # check that results are written within time limit
+            if num_results == 0 and time.time() - start_time > 19:
+                raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
+            elif time.time() - start_time > 21 and (time.time() - start_time) / float(len(result_files)) > 10:
+                raise RuntimeError('Your attack is too slow (> 10 seconds / sample)!')
 
-        if 'avc_test_attack' not in str(subprocess.check_output('docker ps', shell=True)):
-            print("""Your container stopped running before all images were processed. 
-                This either means that the attack was not able to produce adversarials 
-                for all samples or that the attack stopped because of runtime errors.
-                """
-                )
-            break
+            # end condition
+            if num_results == len(test_samples):
+                break
+
+            if 'avc_test_attack' not in str(subprocess.check_output('docker ps', shell=True)):
+                print("""Your container stopped running before all images were processed. 
+                    This either means that the attack was not able to produce adversarials 
+                    for all samples or that the attack stopped because of runtime errors.
+                    """
+                    )
+                break
 
     if len(result_files) < len(test_samples) / 2:
         raise RuntimeError('The attack produced results for less then 50\% of the samples ({}/{}).'.format(len(result_files), len(test_samples)))
@@ -192,7 +224,7 @@ def test_attack(directory, no_cache, gpu, mode):
     print('Median adversarial distances: {} (optimum = 50)'.format(np.median(distances[distances > 50])))
 
     print('')
-    print('Test successful')
+    print('All tests successful, have fun submitting!')
     print('')
     sys.exit()
 
@@ -212,5 +244,7 @@ if __name__ == '__main__':
         help="Mode can be targeted or untargeted.")
     parser.add_argument(
         "--gpu", type=int, default=0, help="GPU number to run container on")
+    parser.add_argument(
+        "--samples", type=int, default=100, help="Number of samples for testing.")
     args = parser.parse_args()
-    test_attack(args.directory, no_cache=args.no_cache, gpu=args.gpu, mode=args.mode)
+    test_attack(args.directory, no_cache=args.no_cache, gpu=args.gpu, mode=args.mode, samples=args.samples)

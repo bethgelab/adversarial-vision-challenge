@@ -12,9 +12,29 @@ try:
 except ImportError:
     from pip._vendor.packaging.version import parse
 
-print('Your are using Python v{}.{}'.format(*sys.version_info[:2]))
+# print python version for debugging purposes
+print('Basic setup tests')
+print('-----------------')
+print('Python version: {}.{}'.format(sys.version_info[0], sys.version_info[1]))
 
-# 1. test that the correct repo2docker is installed
+# 1. check if docker is installed
+from distutils.spawn import find_executable
+if find_executable('docker') is None:
+	raise AssertionError('Docker is needed to start and test your model/attack submission but is not installed on your system.')
+else:
+	print(u'Docker installed: \u2713')
+
+# 1. test that the crowdai_repo2docker is installed
+from distutils.spawn import find_executable
+if find_executable('crowdai-repo2docker') is None:
+	raise AssertionError("""crowdai-repo2docker is need to build a docker image of your model/attack 
+		submission but is not installed on your system. Please install with
+
+		pip install crowdai-repo2docker
+
+		""")
+else:
+	print(u'Crowdai_repo2docker installed: \u2713')
 
 # 2. test that latest adversarial vision challenge is installed
 if sys.version_info[0] == 3:
@@ -36,6 +56,6 @@ if latest_version > LooseVersion(current_version):
 		""".format(current_version, latest_version)
 		)
 else:
-	print('Latest version of adversarial-vision-challenge package is installed.')
+	print(u'AVC package up-to-date: \u2713')
 
 # 3. test that upt file exists (to install git)
