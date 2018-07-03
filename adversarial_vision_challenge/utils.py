@@ -53,7 +53,7 @@ def store_adversarial(file_name, adversarial):
     """
         Given the filename, stores the adversarial as .npy file.
     """
-    adversarial = check_image(adversarial)
+    adversarial = check_image(adversarial) if adversarial is not None else adversarial
 
     output_folder = os.getenv('OUTPUT_ADVERSARIAL_PATH')
     path = os.path.join(output_folder, file_name)
