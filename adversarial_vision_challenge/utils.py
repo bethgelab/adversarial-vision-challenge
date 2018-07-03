@@ -8,6 +8,7 @@ from .client import TinyImageNetBSONModel
 from .retry_helper import retryable
 from .logger import logger
 from .notifier import CrowdAiNotifier
+from .common import check_image
 
 from adversarial_vision_challenge.retry_helper import RetriesExceededError
 
@@ -15,7 +16,6 @@ def _img_to_numpy(path):
     """
         Reads image image from the given path and returns an numpy array.
     """
-    shape = (64, 64)
     path = os.path.join(os.path.dirname(__file__), path)
     image = np.load(path)
     image = np.asarray(image, dtype=np.float32)
@@ -29,7 +29,11 @@ def _read_image(file_name):
     """
     input_folder = os.getenv('INPUT_IMG_PATH')
     img_path = os.path.join(input_folder, file_name)
-    return _img_to_numpy(img_path)
+    image = _img_to_numpy(img_path)
+    if image.dtype == np.uint8:
+        image = image.astype(np.float32)
+    assert image.dtype == np.float32
+    return image
 
 def read_images():
     """
@@ -49,6 +53,8 @@ def store_adversarial(file_name, adversarial):
     """
         Given the filename, stores the adversarial as .npy file.
     """
+    adversarial = check_image(adversarial)
+
     output_folder = os.getenv('OUTPUT_ADVERSARIAL_PATH')
     path = os.path.join(output_folder, file_name)
     path_without_extension = os.path.splitext(path)[0]
