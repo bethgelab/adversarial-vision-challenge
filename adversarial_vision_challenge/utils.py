@@ -11,14 +11,14 @@ from .common import check_image
 from adversarial_vision_challenge.retry_helper import RetriesExceededError
 
 
-def _img_to_numpy(path):
+def _load_img(path):
     """
         Reads image image from the given path and returns an numpy array.
     """
     path = os.path.join(os.path.dirname(__file__), path)
     image = np.load(path)
-    image = np.asarray(image, dtype=np.float32)
-    image = image[:, :, :3]
+    assert image.dtype == np.uint8
+    assert image.shape == (64, 64, 3)
     return image
 
 
@@ -29,9 +29,9 @@ def _read_image(file_name):
     """
     input_folder = os.getenv('INPUT_IMG_PATH')
     img_path = os.path.join(input_folder, file_name)
-    image = _img_to_numpy(img_path)
-    if image.dtype == np.uint8:
-        image = image.astype(np.float32)
+    image = _load_img(img_path)
+    assert image.dtype == np.uint8
+    image = image.astype(np.float32)
     assert image.dtype == np.float32
     return image
 
@@ -106,5 +106,5 @@ def get_test_data():
     with open(label_file, 'r') as ymlfile:
         files2labels = yaml.load(ymlfile)
 
-    return [(np.load(os.path.join(basepath, filename)), label)
+    return [(_load_img(os.path.join('test_images', filename)), label)
             for filename, label in sorted(files2labels.items())]
