@@ -165,8 +165,9 @@ def test_attack(directory, no_cache, gpu, mode, samples):
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name={cn} {im} bash run.sh".format(gpu=gpu,
-        port=port, imagepath=imagepath, resultpath=resultpath, cn=container_name, im=image_name), shell=True).wait()
+        "--name={cn} {im} bash run.sh".format(
+            gpu=gpu, port=port, imagepath=imagepath, resultpath=resultpath,
+            cn=container_name, im=image_name), shell=True).wait()
 
     checkmark()
 
@@ -222,7 +223,14 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
     distances = np.array(distances)
     print('Number of adversarials {} of {}'.format((distances > 50).sum(), distances.shape[0]))
-    print('Median adversarial distances: {} (optimum = 50)'.format(np.median(distances[distances > 50])))
+
+    median = np.median(distances[distances > 50])
+    print('Median adversarial distances: {} (optimum = 50)'.format(median))
+
+    if np.isnan(median):
+        print('distances: ', distances)
+        sys.stdout.flush()
+        raise RuntimeError('Your attack seems to have failed on more than half of the samples')
 
     print('')
     print('All tests successful, have fun submitting!')
