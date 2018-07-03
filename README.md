@@ -6,11 +6,9 @@ To install the package simply run:
 
 `pip install adversarial-vision-challenge`
 
-We test using Python 2.7, 3.4, 3.5 and 3.6. 
-Other Python versions might work as well. 
-**We recommend using Python 3**!
+This package contains helper functions to implement models and attacks that can be used with Python 2.7, 3.4, 3.5 and 3.6. Other Python versions might work as well. **We recommend using Python 3**!
 
-The test-scripts you can run locally before submission, will work with Python `> 3.4` though due to the `crowdai-repo2docker` dependency. See `Running Tests Scripts`-section below for more detailed information.
+Furthermore, this package also contains test scripts that should be used before submission to perform local tests of your model or attack. These test scripts are Python 3 only, because they depend on `crowdai-repo2docker`. See `Running Tests Scripts` section below for more detailed information.
 
 
 ### Implementing a model server
@@ -50,8 +48,7 @@ for (file_name, image, label) in read_images():
 
 ### Running Tests Scripts
 
-Although you can use this package with python 2 if you develop in python 2, 
-you need to install and run the the **`avc-*` binaries** within a **python >3.4 environment**, otherwise they'll immediately fail.  
+The test scripts (running on your host machine) will need Python 3. Your model or attack running inside a docker container and using this package can use Python 2 or 3.
 
 - To test a model, run the following: `avc-test-model .`
 - To test an untargeted attack, run the following: `avc-test-untargeted-attack .`
