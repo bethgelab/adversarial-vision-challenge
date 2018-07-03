@@ -6,7 +6,7 @@ To install the package simply run:
 
 `pip install adversarial-vision-challenge`
 
-We test using Python 2.7, 3.4 3.5 and 3.6. 
+We test using Python 2.7, 3.4, 3.5 and 3.6. 
 Other Python versions might work as well. 
 **We recommend using Python 3**!
 
@@ -61,5 +61,5 @@ In order for the attacks to work, your models / attack folders need to have the 
 - for attacks: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-attack-template
 
 Although you can use this package with python 2 if you develop in python 2, 
-you need to install and run the the `avc-*` binaries within a py3 environment, otherwise they'll immediately fail.  
+you need to install and run the the **`avc-*` binaries** within a **python >3.4 environment**, otherwise they'll immediately fail.  
 
