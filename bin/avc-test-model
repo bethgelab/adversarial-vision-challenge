@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
-import threading
 import argparse
 import subprocess
 import adversarial_vision_challenge
-import foolbox
 import numpy as np
-import yaml
-import time
 import os
 import sys
 import socket
 from tqdm import tqdm
 from adversarial_vision_challenge.common import check_track
 
+
 def checkmark():
     print(u' \u2713')
+
 
 def _get_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -42,20 +38,21 @@ def test_model(directory, no_cache, gpu):
     # build image
     if no_cache:
         print('Building image (without cache)...')
-        raise AssertionError('Option does not yet exist because repo2docker does not allow us to build without cache.')
-        subprocess.check_call(
-            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(image_name, directory),
-            shell=True)
+        raise AssertionError(
+            'Option does not yet exist because repo2docker does'
+            ' not allow us to build without cache.')
     else:
         print('Building image from cache (if exists)...', end="")
-        subprocess.check_call("crowdai-repo2docker --no-run --image-name {} --debug {}".format(
-            image_name, directory), shell=True)
+        cmd = "crowdai-repo2docker --no-run --image-name {} --debug {}"
+        subprocess.check_call(cmd.format(image_name, directory), shell=True)
         checkmark()
 
     # remove old container if exists
-    if container_name in str(subprocess.check_output('docker ps -a', shell=True)):
+    containers = str(subprocess.check_output('docker ps -a', shell=True))
+    if container_name in containers:
         print('Removing existing submission container...', end="")
-        subprocess.check_call("docker rm -f {cn}".format(cn=container_name), shell=True)
+        cmd = "docker rm -f {cn}".format(cn=container_name)
+        subprocess.check_call(cmd, shell=True)
         checkmark()
 
     # start model container
@@ -63,7 +60,8 @@ def test_model(directory, no_cache, gpu):
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
     cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash run.sh"
     cmd = cmd.format(port=port, gpu=gpu, cn=container_name, im=image_name)
-    print('Starting container on port {} using the command \n \n {}'.format(port, cmd))
+    print('Starting container on port {} using the command \n \n {}'.format(
+        port, cmd))
     subprocess.check_call(cmd, shell=True)
 
     # attach to container to print output in case of failures
@@ -106,7 +104,8 @@ def test_model(directory, no_cache, gpu):
 
     # start client model
     print('Connecting to model sever...', end="")
-    model = adversarial_vision_challenge.TinyImageNetBSONModel('http://{}:{}'.format(ip, port))
+    url = 'http://{}:{}'.format(ip, port)
+    model = adversarial_vision_challenge.TinyImageNetBSONModel(url)
     checkmark()
 
     print('Server version', model.server_version())
@@ -114,8 +113,10 @@ def test_model(directory, no_cache, gpu):
     print('Checking model axis and bounds...', end="")
     channel_axis = model.channel_axis()
 
-    assert channel_axis == 3, "model channel axis should be 3, but is: %s" % channel_axis
-    assert model.bounds() == (0, 255), "model bounds should be (0,255), but got: %s" % model.bounds
+    assert channel_axis == 3, \
+        "model channel axis should be 3, but is: %s" % channel_axis
+    assert model.bounds() == (0, 255), \
+        "model bounds should be (0,255), but got: %s" % model.bounds
     checkmark()
 
     # test predictions
@@ -123,7 +124,8 @@ def test_model(directory, no_cache, gpu):
     image, label = np.random.uniform(size=(64, 64, 3)).astype(
         np.float32) * 255, 1
 
-    assert isinstance(model(image), int), "prediction should be an int-value, but got: %s" % type(model(image))
+    assert isinstance(model(image), int), \
+        "prediction should be an int-value, but got: %s" % type(model(image))
     checkmark()
 
     # test prediction performance
@@ -135,10 +137,13 @@ def test_model(directory, no_cache, gpu):
         if model(image) == label:
             correct += 1
 
-    print('The top-1 performance of your model is {}%.'.format(100 * correct / float(len(test_samples))))
+    print('The top-1 performance of your model is {}%.'.format(
+        100 * correct / float(len(test_samples))))
 
     if correct / float(len(test_samples)) < 0.5:
-        raise IOError('The performance of your model is too low (< 50%)! Please check whether your preprocessing is correctly implemented.')
+        raise AssertionError(
+            'The performance of your model is too low (< 50%)! Please check'
+            ' whether your preprocessing is correctly implemented.')
 
     print('')
     print('All tests successful, have fun submitting!')
@@ -147,6 +152,7 @@ def test_model(directory, no_cache, gpu):
 
 
 if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "directory", help="The directory containing the Dockerfile.")

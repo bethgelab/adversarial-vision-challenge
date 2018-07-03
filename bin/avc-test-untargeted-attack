@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 import subprocess
 
 if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "directory", help="The directory containing the Dockerfile.")
@@ -13,9 +15,18 @@ if __name__ == '__main__':
     parser.add_argument(
         "--gpu", type=int, default=0, help="GPU number to run container on")
     parser.add_argument(
-        "--samples", type=int, default=100, help="Number of samples for testing.")
+        "--samples", type=int, default=100,
+        help="Number of samples for testing.")
     args = parser.parse_args()
     if args.no_cache:
-        subprocess.Popen("avc-test-attack --no-cache --gpu {gpu} --mode untargeted --samples {samples} {directory}".format(gpu=args.gpu, directory=args.directory, samples=args.samples), shell=True).wait()
+        cache = ' --no-cache'
     else:
-        subprocess.Popen("avc-test-attack --gpu {gpu} --mode untargeted --samples {samples} {directory}".format(gpu=args.gpu, directory=args.directory, samples=args.samples), shell=True).wait()
+        cache = ''
+    cmd = ('avc-test-attack{cache} --gpu {gpu} --mode untargeted'
+           ' --samples {samples} {directory}')
+    cmd = cmd.format(
+        cache=cache,
+        gpu=args.gpu,
+        directory=args.directory,
+        samples=args.samples)
+    subprocess.Popen(cmd, shell=True).wait()

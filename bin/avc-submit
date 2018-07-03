@@ -24,7 +24,8 @@ def _is_dirty(repo):
     should_continue = True
     if is_dirty:
         should_continue = _ask_to_continue(
-            'You have uncommited changes to your repository. Are you sure you want to submit before pushing the latest changes?')
+            'You have uncommited changes to your repository. Are you sure'
+            ' you want to submit before pushing the latest changes?')
         if (should_continue):
             is_dirty = False
     return should_continue and not is_dirty
@@ -50,17 +51,19 @@ def _submit(repo, directory, tag):
     cmd = "git {config} tag {tag} && git {config} push origin {tag}".format(
         config=git_config, tag=tag)
     subprocess.Popen(cmd, shell=True).wait()
-    print("Submitted successfully. Please check the issues page on you GitLab repository for tracking your submission:")
+    print('Submitted successfully. Please check the issues page on you GitLab'
+          ' repository for tracking your submission:')
     print(_get_issues_url(repo))
 
 
 if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "directory", help="The directory containing the git repository.")
     parser.add_argument(
-        "--tag", help="The tag to be used for the submission. A random one will be used if undefined."
-    )
+        "--tag", help="The tag to be used for the submission. A random"
+                      " one will be used if undefined.")
     args = parser.parse_args()
 
     repo = Repo(args.directory)

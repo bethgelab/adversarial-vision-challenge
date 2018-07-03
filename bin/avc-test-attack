@@ -32,7 +32,8 @@ def _get_free_port():
 def test_attack(directory, no_cache, gpu, mode, samples):
     check_track(
         directory,
-        'nips-2018-avc-targeted-attack' if mode == 'targeted' else 'nips-2018-avc-untargeted-attack')
+        'nips-2018-avc-targeted-attack' if mode == 'targeted'
+        else 'nips-2018-avc-untargeted-attack')
 
     image_name = 'avc/attack_submission'
     container_name = 'avc_test_attack_submission'
@@ -48,23 +49,29 @@ def test_attack(directory, no_cache, gpu, mode, samples):
     # build image
     if no_cache:
         print('Building image (without cache)...')
-        raise AssertionError('Option does not yet exist because repo2docker does not allow us to build without cache.')
+        raise AssertionError('Option does not yet exist because repo2docker'
+                             ' does not allow us to build without cache.')
         subprocess.check_call(
-            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(image_name, directory),
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+                image_name, directory),
             shell=True)
     else:
         print('Building image from cache (if exists)...', end="")
-        subprocess.check_call("crowdai-repo2docker --no-run --image-name {} --debug {}".format(
-            image_name, directory), shell=True)
+        subprocess.check_call(
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+                image_name, directory), shell=True)
         checkmark()
 
     # remove old container if exists
-    if container_name in str(subprocess.check_output('docker ps -a', shell=True)):
+    containers = str(subprocess.check_output('docker ps -a', shell=True))
+    if container_name in containers:
         print('Removing existing submission container...', end="")
-        subprocess.check_call("docker rm -f {cn}".format(cn=container_name), shell=True)
+        cmd = "docker rm -f {cn}".format(cn=container_name)
+        subprocess.check_call(cmd, shell=True)
         checkmark()
 
-    # build local temporary directories to read sample images and write adversarials
+    # build local temporary directories to read sample images
+    # and write adversarials
     print('Creating empty folders for test samples and results...', end="")
     for folder in ['avc_images/', 'avc_results/']:
         if not os.path.exists(folder):
@@ -77,7 +84,8 @@ def test_attack(directory, no_cache, gpu, mode, samples):
     checkmark()
 
     # write source images for testing into image directory
-    print('Saving test samples into samples_folder (default: avc_images/)...', end="")
+    print('Saving test samples into samples_folder'
+          ' (default: avc_images/)...', end="")
     test_samples = adversarial_vision_challenge.utils.get_test_data()[:samples]
     labels = {}
 
@@ -98,16 +106,19 @@ def test_attack(directory, no_cache, gpu, mode, samples):
                                             channel_axis=3,
                                             preprocessing=(1, 1))
             self.samples = test_samples
-            self.S = np.stack([sample[0] for sample in test_samples]).reshape((len(test_samples), -1))[:, :1000]
+            self.S = np.stack([sample[0] for sample in test_samples]).reshape(
+                (len(test_samples), -1))[:, :1000]
             self.untargeted = mode == 'untargeted'
             self.calls = 0
 
         def predictions(self, image):
-            # if distance is small return correct label, else return wrong label
+            # if distance is small return correct label, else
+            # return wrong label
             self.calls += 1
 
             # get sample with minimum distance to image
-            distances = np.linalg.norm(self.S - image.flatten()[:1000][None], axis=1)
+            diff = self.S - image.flatten()[:1000][None]
+            distances = np.linalg.norm(diff, axis=1)
             distance = np.amin(distances)
 
             if self.untargeted:
@@ -178,7 +189,8 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
     # monitor results folder to check if adversarial is written
     print('Starting to test attack against mock model and test samples...')
-    print("If you'd like to test with less or more samples, append e.g --samples 50 to your avc-test-XXX command.")
+    print('If you would like to test with less or more samples, append e.g'
+          ' --samples 50 to your avc-test-XXX command.')
     start_time = time.time()
 
     with tqdm(total=len(test_samples)) as pbar:
@@ -186,7 +198,8 @@ def test_attack(directory, no_cache, gpu, mode, samples):
             time.sleep(1)
             result_files = os.listdir('avc_results/')
             num_results = len(result_files)
-            # print('{} result files written after {} seconds.'.format(len(result_files), int(time.time() - start_time)))
+            # print('{} result files written after {} seconds.'.format(
+            #     len(result_files), int(time.time() - start_time)))
 
             # update progress bar
             if pbar.n < num_results:
@@ -194,29 +207,39 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
             # check that results are written within time limit
             if num_results == 0 and time.time() - start_time > 19:
-                raise RuntimeError('Results file not written with time limit (20 seconds)- something went wrong!')
-            elif time.time() - start_time > 21 and (time.time() - start_time) / float(len(result_files)) > 10:
-                raise RuntimeError('Your attack is too slow (> 10 seconds / sample)!')
+                raise RuntimeError('Results file not written with time limit'
+                                   ' (20 seconds)- something went wrong!')
+            elif time.time() - start_time > 21 and \
+                    (time.time() - start_time) / float(len(result_files)) > 10:
+                raise RuntimeError('Your attack is too slow'
+                                   ' (> 10 seconds / sample)!')
 
             # end condition
             if num_results == len(test_samples):
                 break
 
-            if 'avc_test_attack' not in str(subprocess.check_output('docker ps', shell=True)):
-                print("""Your container stopped running before all images were processed.
-                    This either means that the attack was not able to produce adversarials
-                    for all samples or that the attack stopped because of runtime errors.
-                    """)
+            containers = str(subprocess.check_output('docker ps', shell=True))
+            if 'avc_test_attack' not in containers:
+                print("""Your container stopped running before all images
+                were processed. This either means that the attack was not
+                able to produce adversarials for all samples or that the
+                attack stopped because of runtime errors.""")
                 break
 
     if len(result_files) < len(test_samples) / 2:
-        raise RuntimeError('The attack produced results for less then 50\% of the samples ({}/{}).'.format(len(result_files), len(test_samples)))
+        raise RuntimeError('The attack produced results for less then 50\%'
+                           ' of the samples ({}/{}).'.format(
+                               len(result_files), len(test_samples)))
 
     # check that the number of calls is below maximum
     if fmodel.calls < len(test_samples) * 1000:
-        print('Your attack queried the model {} times (maximum allowed: {})'.format(fmodel.calls, len(test_samples) * 1000))
+        print('Your attack queried the model {} times'
+              ' (maximum allowed: {})'.format(
+                  fmodel.calls, len(test_samples) * 1000))
     else:
-        raise RuntimeError('Your attack queried the model {} too many times (maximum allowed: {})!'.format(fmodel.calls, len(test_samples) * 1000))
+        raise RuntimeError('Your attack queried the model {} too many times'
+                           ' (maximum allowed: {})!'.format(
+                               fmodel.calls, len(test_samples) * 1000))
 
     # check whether results are truly adversarials and report median distance
     distances = []
@@ -227,7 +250,8 @@ def test_attack(directory, no_cache, gpu, mode, samples):
         distances.append(np.linalg.norm(original - adversarial))
 
     distances = np.array(distances)
-    print('Number of adversarials {} of {}'.format((distances > 50).sum(), distances.shape[0]))
+    print('Number of adversarials {} of {}'.format(
+        (distances > 50).sum(), distances.shape[0]))
 
     median = np.median(distances[distances > 50])
     print('Median adversarial distances: {} (optimum = 50)'.format(median))
@@ -235,7 +259,8 @@ def test_attack(directory, no_cache, gpu, mode, samples):
     if np.isnan(median):
         print('distances: ', distances)
         sys.stdout.flush()
-        raise RuntimeError('Your attack seems to have failed on more than half of the samples')
+        raise RuntimeError('Your attack seems to have failed on more'
+                           ' than half of the samples')
 
     print('')
     print('All tests successful, have fun submitting!')
@@ -244,6 +269,7 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
 
 if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
     # set log file
     os.environ["LOG_FILE"] = 'avc.log'
 
@@ -259,6 +285,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "--gpu", type=int, default=0, help="GPU number to run container on")
     parser.add_argument(
-        "--samples", type=int, default=100, help="Number of samples for testing.")
+        "--samples", type=int, default=100,
+        help="Number of samples for testing.")
     args = parser.parse_args()
-    test_attack(args.directory, no_cache=args.no_cache, gpu=args.gpu, mode=args.mode, samples=args.samples)
+    test_attack(args.directory, no_cache=args.no_cache, gpu=args.gpu,
+                mode=args.mode, samples=args.samples)

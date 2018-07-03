@@ -1,68 +1,70 @@
 #!/usr/bin/env python3
 
-from future.moves.urllib import request
-from distutils.version import LooseVersion
-import packaging.version
-import adversarial_vision_challenge
-import requests
-import json
-import sys
-try:
+import os
+
+
+if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
+
+    print('Basic setup tests')
+    print('-----------------')
+
+    # 0. check if AVC lib is installed
+    try:
+        import adversarial_vision_challenge
+    except ImportError:
+        raise ImportError('Please make sure the "adversarial_vision_challenge"'
+                          ' package is installed for python3.')
+
+    import sys
+    import requests
     from packaging.version import parse
-except ImportError:
-    from pip._vendor.packaging.version import parse
+    from distutils.version import LooseVersion
+    from distutils.spawn import find_executable
 
-# print python version for debugging purposes
-print('Basic setup tests')
-print('-----------------')
-print('Python version: {}.{}'.format(sys.version_info[0], sys.version_info[1]))
+    # print python version for debugging purposes
+    print('Python version: {}.{}'.format(
+        sys.version_info[0], sys.version_info[1]))
 
-# 0. check if AVC lib is installed
-try:
-	import adversarial_vision_challenge
-except ImportError:
-	raise AssertionError('Please make sure to have "adversarial_vision_challenge" installed for python3 on your system.')
+    # 1. check if docker is installed
+    if find_executable('docker') is None:
+        raise AssertionError(
+            'Docker is needed to start and test your model/attack'
+            ' submission but is not installed on your system.')
+    else:
+        print('Docker installed: \u2713')
 
+    # 1. test that the crowdai_repo2docker is installed
+    if find_executable('crowdai-repo2docker') is None:
+        raise AssertionError(
+            """crowdai-repo2docker is need to build a docker image of your model/attack
+            submission but is not installed on your system. Please install with
 
-# 1. check if docker is installed
-from distutils.spawn import find_executable
-if find_executable('docker') is None:
-	raise AssertionError('Docker is needed to start and test your model/attack submission but is not installed on your system.')
-else:
-	print(u'Docker installed: \u2713')
+                python3 -m pip install crowdai-repo2docker
 
-# 1. test that the crowdai_repo2docker is installed
-from distutils.spawn import find_executable
-if find_executable('crowdai-repo2docker') is None:
-	raise AssertionError("""crowdai-repo2docker is need to build a docker image of your model/attack 
-		submission but is not installed on your system. Please install with
+            """)
+    else:
+        print('Crowdai_repo2docker installed: \u2713')
 
-		pip install crowdai-repo2docker
+    # 2. test that latest adversarial vision challenge is installed
+    url = 'https://pypi.python.org/pypi/adversarial-vision-challenge/json'
+    data = requests.get(url).json()
+    latest_version = max([LooseVersion(release) for release in data['releases']
+                          if not parse(release).is_prerelease])
 
-		""")
-else:
-	print(u'Crowdai_repo2docker installed: \u2713')
+    current_version = adversarial_vision_challenge.__version__
 
-# 2. test that latest adversarial vision challenge is installed
-if sys.version_info[0] == 3:
-	data = json.loads(request.urlopen('https://pypi.python.org/pypi/adversarial-vision-challenge/json').readall().decode('utf-8'))
-else:
-	data = json.loads(request.urlopen('https://pypi.python.org/pypi/adversarial-vision-challenge/json').read())
-latest_version = max([LooseVersion(release) for release in data['releases'] if not packaging.version.parse(release).is_prerelease])
+    if latest_version > LooseVersion(current_version):
+        raise AssertionError(
+            """Your version of the adversarial-vision-challenge ({})
+            does not match the latest version ({}). Please make
+            sure you are using the latest version, e.g. using pip:
 
-current_version = adversarial_vision_challenge.__version__
+            python3 -m pip install --upgrade adversarial_vision_challenge
 
-if latest_version > LooseVersion(current_version):
-	raise AssertionError("""Your version of the adversarial-vision-challenge ({}) 
-		does not match the latest version ({}). Please make
-		sure you are using the latest version, e.g. using pip:
+            before you proceed.
+            """.format(current_version, latest_version))
+    else:
+        print('AVC package up-to-date: \u2713')
 
-		pip install --upgrade adversarial_vision_challenge
-
-		before you proceed.
-		""".format(current_version, latest_version)
-		)
-else:
-	print(u'AVC package up-to-date: \u2713')
-
-# 3. test that upt file exists (to install git)
+    # 3. test that upt file exists (to install git)
