@@ -50,6 +50,9 @@ for (file_name, image, label) in read_images():
 
 ### Running Tests Scripts
 
+Although you can use this package with python 2 if you develop in python 2, 
+you need to install and run the the **`avc-*` binaries** within a **python >3.4 environment**, otherwise they'll immediately fail.  
+
 - To test a model, run the following: `avc-test-model .`
 - To test an untargeted attack, run the following: `avc-test-untargeted-attack .`
 - To test an targeted attack, run the following: `avc-test-targeted-attack .`
@@ -59,7 +62,4 @@ within the folders you want to test.
 In order for the attacks to work, your models / attack folders need to have the following structure:
 - for models: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-model-template
 - for attacks: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-attack-template
-
-Although you can use this package with python 2 if you develop in python 2, 
-you need to install and run the the **`avc-*` binaries** within a **python >3.4 environment**, otherwise they'll immediately fail.  
 
