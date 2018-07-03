@@ -1,5 +1,7 @@
 import numpy as np
 from .logger import logger
+import json
+import os
 
 
 def check_image(image):
@@ -19,3 +21,11 @@ def check_image(image):
         image = image.astype(np.uint8)
     assert image.dtype == np.uint8
     return image
+
+def check_track(directory, track):
+    crowdai_json = os.path.join(directory, "crowdai.json")
+    with open(crowdai_json) as file:
+        data = json.load(file)
+    id = data['challenge_id']
+
+    assert track == id, "your running test script for {0}, but the crowdai.json says: {1}".format(track, id)

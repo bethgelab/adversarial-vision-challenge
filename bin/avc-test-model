@@ -14,6 +14,7 @@ import os
 import sys
 import socket
 from tqdm import tqdm
+from adversarial_vision_challenge.common import check_track
 
 def checkmark():
     print(u' \u2713')
@@ -25,6 +26,8 @@ def _get_free_port():
 
 
 def test_model(directory, no_cache, gpu):
+    check_track(directory, 'nips-2018-avc-robust-model-track')
+
     image_name = 'avc/model_submission'
     container_name = 'avc_test_model_submission'
 

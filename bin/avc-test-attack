@@ -14,6 +14,7 @@ import os
 import sys
 import socket
 from tqdm import tqdm
+from adversarial_vision_challenge.common import check_track
 
 
 def checkmark():
@@ -29,6 +30,10 @@ def _get_free_port():
 
 
 def test_attack(directory, no_cache, gpu, mode, samples):
+    check_track(
+        directory,
+        'nips-2018-avc-targeted-attack' if mode == 'targeted' else 'nips-2018-avc-untargeted-attack')
+
     image_name = 'avc/attack_submission'
     container_name = 'avc_test_attack_submission'
 
