@@ -1,16 +1,15 @@
-import csv
 import os
 
 import numpy as np
 import yaml
 
 from .client import TinyImageNetBSONModel
-from .retry_helper import retryable
 from .logger import logger
 from .notifier import CrowdAiNotifier
 from .common import check_image
 
 from adversarial_vision_challenge.retry_helper import RetriesExceededError
+
 
 def _img_to_numpy(path):
     """
@@ -21,6 +20,7 @@ def _img_to_numpy(path):
     image = np.asarray(image, dtype=np.float32)
     image = image[:, :, :3]
     return image
+
 
 def _read_image(file_name):
     """
@@ -34,6 +34,7 @@ def _read_image(file_name):
         image = image.astype(np.float32)
     assert image.dtype == np.float32
     return image
+
 
 def read_images():
     """
@@ -53,7 +54,8 @@ def store_adversarial(file_name, adversarial):
     """
         Given the filename, stores the adversarial as .npy file.
     """
-    adversarial = check_image(adversarial) if adversarial is not None else adversarial
+    if adversarial is not None:
+        adversarial = check_image(adversarial)
 
     output_folder = os.getenv('OUTPUT_ADVERSARIAL_PATH')
     path = os.path.join(output_folder, file_name)
@@ -61,9 +63,11 @@ def store_adversarial(file_name, adversarial):
     np.save(path_without_extension, adversarial)
     CrowdAiNotifier.store_adversarial(file_name)
 
+
 def attack_complete():
     """
-        Send a notificaton to the crowd-ai backend that the attack has successfully completed.
+        Send a notificaton to the crowd-ai backend that the attack has
+        successfully completed.
     """
     CrowdAiNotifier.attack_complete()
 
@@ -100,6 +104,7 @@ def get_test_data():
     basepath = os.path.join(os.path.dirname(__file__), 'test_images/')
     label_file = os.path.join(basepath, 'labels.yml')
     with open(label_file, 'r') as ymlfile:
-        labels = yaml.load(ymlfile)
+        files2labels = yaml.load(ymlfile)
 
-    return [(np.load(os.path.join(basepath, key)), labels[key]) for key in labels.keys()]
+    return [(np.load(os.path.join(basepath, filename)), label)
+            for filename, label in sorted(files2labels.items())]
