@@ -15,8 +15,10 @@ import sys
 import socket
 from tqdm import tqdm
 
+
 def checkmark():
     print(u' \u2713')
+
 
 def _get_free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,6 +26,7 @@ def _get_free_port():
     port = s.getsockname()[1]
     s.close()
     return port
+
 
 def test_attack(directory, no_cache, gpu, mode, samples):
     image_name = 'avc/attack_submission'
@@ -76,7 +79,7 @@ def test_attack(directory, no_cache, gpu, mode, samples):
     for k, (image, label) in enumerate(test_samples):
         np.save("avc_images/img{}.npy".format(k), image)
         labels['img{}.npy'.format(k)] = label
-    
+
     with open('avc_images/labels.yml', 'w') as outfile:
         yaml.dump(labels, outfile)
 
@@ -112,7 +115,6 @@ def test_attack(directory, no_cache, gpu, mode, samples):
                     return (self.samples[np.argmin(distances)][1] + 30) % 200
                 else:
                     return self.samples[np.argmin(distances)][1]
-                    
 
         def batch_predictions(self, batch):
             self.calls += batch.shape[0]
@@ -163,7 +165,7 @@ def test_attack(directory, no_cache, gpu, mode, samples):
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name={cn} {im} bash run.sh".format(gpu=gpu, 
+        "--name={cn} {im} bash run.sh".format(gpu=gpu,
         port=port, imagepath=imagepath, resultpath=resultpath, cn=container_name, im=image_name), shell=True).wait()
 
     checkmark()
@@ -195,11 +197,10 @@ def test_attack(directory, no_cache, gpu, mode, samples):
                 break
 
             if 'avc_test_attack' not in str(subprocess.check_output('docker ps', shell=True)):
-                print("""Your container stopped running before all images were processed. 
-                    This either means that the attack was not able to produce adversarials 
+                print("""Your container stopped running before all images were processed.
+                    This either means that the attack was not able to produce adversarials
                     for all samples or that the attack stopped because of runtime errors.
-                    """
-                    )
+                    """)
                 break
 
     if len(result_files) < len(test_samples) / 2:

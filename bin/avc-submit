@@ -49,22 +49,22 @@ def _submit(repo, directory, tag):
         git_dir=git_dir, work_tree=directory)
     cmd = "git {config} tag {tag} && git {config} push origin {tag}".format(
         config=git_config, tag=tag)
-    subprocess.Popen(cmd, shell = True).wait()
+    subprocess.Popen(cmd, shell=True).wait()
     print("Submitted successfully. Please check the issues page on you GitLab repository for tracking your submission:")
     print(_get_issues_url(repo))
 
 
 if __name__ == '__main__':
-    parser=argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "directory", help="The directory containing the git repository.")
     parser.add_argument(
         "--tag", help="The tag to be used for the submission. A random one will be used if undefined."
     )
-    args=parser.parse_args()
+    args = parser.parse_args()
 
-    repo=Repo(args.directory)
-    should_continue=_is_dirty(repo)
+    repo = Repo(args.directory)
+    should_continue = _is_dirty(repo)
 
     if should_continue:
         _submit(repo, args.directory, args.tag)
