@@ -62,9 +62,6 @@ def model_server(model):
         'argument of foolbox model wrappers')
 
     def _predict(image):
-        assert isinstance(image, np.ndarray)
-        assert image.shape == (64, 64, 3)
-
         assert isinstance(image, np.ndarray), "input image should be an numpy array"
         assert image.shape == (64, 64, 3), "input image should be of size 64x64x3"
         assert image.dtype == np.uint8, "image should be of type np.uint8, but got: %s" % image.dtype
