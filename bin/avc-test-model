@@ -9,7 +9,7 @@ import sys
 import socket
 from tqdm import tqdm
 from adversarial_vision_challenge.common import check_track
-
+from adversarial_vision_challenge.utils import _wait_for_server_start
 
 def checkmark():
     print(u' \u2713')
@@ -76,36 +76,11 @@ def test_model(directory, no_cache, gpu):
     ip = p.stdout.read()[:-1].decode('UTF-8')
     print('Received IP of server: ', ip)
 
-    # wait until start of server
-    print('Waiting for server to start...', end="")
-    for i in range(30):
-        # check if the server is up
-        cmd = 'wget -qO - --tries 2 --retry-connrefused http://{}:{}'
-        if subprocess.Popen(cmd.format(ip, port), shell=True).wait() == 0:
-            break
-
-        # check if the container is running
-        form = "{{ .State.Running }}"
-        cmd = "docker inspect --format='{}' {}".format(form, container_name)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        p.wait()
-        running = p.stdout.read().decode('UTF-8').strip() == 'true'
-        if not running:
-            # print any errors in the code and exit
-            print(dump.stderr.read().decode('UTF-8'))
-            form = "{{ .State.ExitCode }}"
-            cmd = "docker inspect --format='{}' {}".format(
-                form, container_name)
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-            p.wait()
-            return exit(int(p.stdout.read().decode('UTF-8').strip()))
-
-    checkmark()
-
     # start client model
     print('Connecting to model sever...', end="")
     url = 'http://{}:{}'.format(ip, port)
     model = adversarial_vision_challenge.TinyImageNetBSONModel(url)
+    _wait_for_server_start(model)
     checkmark()
 
     print('Server version', model.server_version())
