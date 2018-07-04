@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-
+import subprocess
 
 if __name__ == '__main__':
     print('running {}'.format(os.path.basename(__file__)))
@@ -26,13 +26,31 @@ if __name__ == '__main__':
     print('Python version: {}.{}'.format(
         sys.version_info[0], sys.version_info[1]))
 
-    # 1. check if docker is installed
-    if find_executable('docker') is None:
-        raise AssertionError(
-            'Docker is needed to start and test your model/attack'
-            ' submission but is not installed on your system.')
-    else:
-        print('Docker installed: \u2713')
+    # 1. check if docker is available and running
+    try:
+        FNULL = open(os.devnull, 'w')
+        subprocess.check_call('docker ps', shell=True, stdout=FNULL, close_fds=True)
+    except subprocess.CalledProcessError:
+        print('Error: Docker is installed on your system but seems not to be running.')
+        raise
+    except OSError:
+        print('Error: Docker is not installed on your system!')
+        raise
+    
+    print('Docker installed & running: \u2713')
+    
+    # 1. check if nvidia-docker is available and running
+    try:
+        FNULL = open(os.devnull, 'w')
+        subprocess.check_call('nvidia-docker -v', shell=True, stdout=FNULL, close_fds=True)
+    except subprocess.CalledProcessError:
+        print('Error: nvidia-docker is not installed on your system!')
+        raise
+    except OSError:
+        print('Error: nvidia-docker is not installed on your system!')
+        raise
+
+    print('Nvidia-docker installed: \u2713')
 
     # 1. test that the crowdai_repo2docker is installed
     if find_executable('crowdai-repo2docker') is None:
