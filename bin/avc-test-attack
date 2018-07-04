@@ -29,6 +29,29 @@ def _get_free_port():
     return port
 
 
+def load_image(path):
+    x = np.load(path)
+    assert x.shape == (64, 64, 3)
+    assert x.dtype == np.uint8
+    return x
+
+
+def distance(X, Y):
+    assert X.dtype == np.uint8
+    assert Y.dtype == np.uint8
+    X = X.astype(np.float64) / 255
+    Y = Y.astype(np.float64) / 255
+    return np.linalg.norm(X - Y)
+
+
+# distance if no adversarial was found (worst case)
+def worst_case_distance(X):
+    assert X.dtype == np.uint8
+    worst_case = np.zeros_like(X)
+    worst_case[X < 128] = 255
+    return distance(X, worst_case)
+
+
 def test_attack(directory, no_cache, gpu, mode, samples):
     check_track(
         directory,
@@ -243,18 +266,29 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
     # check whether results are truly adversarials and report median distance
     distances = []
+    real_distances = []
 
     for file in os.listdir('avc_results/'):
-        original = np.load('avc_images/{}'.format(file)).astype(np.float64)
-        adversarial = np.load('avc_results/{}'.format(file)).astype(np.float64)
-        distances.append(np.linalg.norm(original - adversarial))
+        original = load_image('avc_images/{}'.format(file))
+        try:
+            adversarial = load_image('avc_results/{}'.format(file))
+        except AssertionError:
+            print('adversarial for {} is invalid'.format(file))
+            adversarial = None
+        if adversarial is None:
+            _distance = float(worst_case_distance(original))
+        else:
+            _distance = float(distance(original, adversarial))
+        real_distances.append(_distance)
 
-    distances = np.array(distances)
+    real_distances = np.array(real_distances)
+    distances = real_distances * 255
     print('Number of adversarials {} of {}'.format(
         (distances > 50).sum(), distances.shape[0]))
 
-    median = np.median(distances[distances > 50])
-    print('Median adversarial distances: {} (optimum = 50)'.format(median))
+    median = np.median(real_distances[distances > 50])
+    print('Median adversarial distances: {}'
+          ' (optimum = 50 / 255 = 0.196)'.format(median))
 
     if np.isnan(median):
         print('distances: ', distances)
