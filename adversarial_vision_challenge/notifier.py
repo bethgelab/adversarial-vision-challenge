@@ -14,6 +14,12 @@ class AttackNotifications:
     RETRIES_EXCEEDED = "AVC.ATTACK.RETRIES_EXCEEDED_ERROR"
     STORE_ADVERSARIAL = "AVC.ATTACK.STORE_ADVERSARIAL"
 
+
+class GeneralNotifications:
+    TYPE = "AVC.GENERAL"
+    ASSESTION_FAILURE = "AVC.ASSESTION_FAILURE"
+
+
 class CrowdAiNotifier():
 
     @staticmethod
@@ -64,5 +70,15 @@ class CrowdAiNotifier():
             message="The attack has exceeded the max number of allowed predictions requests.",
             payload={
                 "type": ModelNotifications.TYPE
+            }
+        )
+    
+    @staticmethod
+    def assertion_failure(message):
+        CrowdAiNotifier._send_notification(
+            event_type=GeneralNotifications.ASSESTION_FAILURE,
+            message=message,
+            payload={
+                "type": GeneralNotifications.TYPE
             }
         )

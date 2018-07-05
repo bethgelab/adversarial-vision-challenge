@@ -18,6 +18,7 @@ from werkzeug.exceptions import TooManyRequests
 from . import __version__
 from .logger import logger
 from .notifier import CrowdAiNotifier
+from .common import _assert
 
 
 # the number of max requests to predict for this model run
@@ -49,7 +50,7 @@ def model_server(model):
     log.setLevel(logging.ERROR)
 
     channel_axis = model.channel_axis()
-    assert channel_axis in [1, 3], "model channel axis should be either 1 or 3"
+    _assert(channel_axis in [1, 3], "model channel axis should be either 1 or 3"
 
     try:
         bounds = model.bounds()
@@ -57,14 +58,14 @@ def model_server(model):
         bounds = (0, 255)
         logger.info('model has no bounds method, assuming (0, 255)')
 
-    assert bounds == (0, 255), (
+    _assert)bounds == (0, 255), (
         'bounds must be (0, 255), update your model or use the preprocessing '
-        'argument of foolbox model wrappers')
+        'argument of foolbox model wrappers'))
 
     def _predict(image):
-        assert isinstance(image, np.ndarray), "input image should be an numpy array"
-        assert image.shape == (64, 64, 3), "input image should be of size 64x64x3"
-        assert image.dtype == np.uint8, "image should be of type np.uint8, but got: %s" % image.dtype
+        _assert(isinstance(image, np.ndarray), "input image should be an numpy array")
+        _assert(image.shape == (64, 64, 3), "input image should be of size 64x64x3")
+        _assert(image.dtype == np.uint8, "image should be of type np.uint8, but got: %s" % image.dtype)
 
         # models (should) expect float32 arrays
         image = image.astype(np.float32)
@@ -75,10 +76,10 @@ def model_server(model):
         prediction = model.predictions(image)
 
         if isinstance(prediction, np.ndarray) and prediction.size > 1:
-            assert prediction.size == 200, "prediction.size should be 200, but got: %s" % prediction.size
+            _assert(prediction.size == 200, "prediction.size should be 200, but got: %s" % prediction.size)
             prediction = np.argmax(prediction)
         prediction = int(prediction)
-        assert 0 <= prediction < 200, "prediction should be a value between 0 and 200, but got: %s" % prediction
+        _assert(0 <= prediction < 200, "prediction should be a value between 0 and 200, but got: %s" % prediction)
         return prediction
 
     _predict = _wrap(_predict, ['prediction'])
