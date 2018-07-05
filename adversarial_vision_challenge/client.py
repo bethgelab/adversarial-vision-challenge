@@ -8,7 +8,7 @@ import bson
 
 from .retry_helper import retryable
 from .logger import logger
-from .common import check_image
+from .common import check_image, _assert
 
 if sys.version_info > (3, 3):
     import urllib.parse as parse
@@ -143,8 +143,8 @@ class TinyImageNetBSONModel(Model, HTTPClient):
         result = self._post('/predict', data)
 
         prediction = result['prediction']
-        assert isinstance(prediction, int), "prediction should return an int value, but got: %s" % type(prediction)
-        assert (0 <= prediction < 200), "prediction should be a value between 0 and 200, but got: %s" % prediction
+        _assert(isinstance(prediction, int), "prediction should return an int value, but got: %s" % type(prediction))
+        _assert((0 <= prediction < 200), "prediction should be a value between 0 and 200, but got: %s" % prediction)
         return prediction
 
     def batch_predictions(self, images):

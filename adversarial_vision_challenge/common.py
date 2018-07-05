@@ -2,13 +2,14 @@ import numpy as np
 from .logger import logger
 import json
 import os
+from .notifier import CrowdAiNotifier
 
 
 def check_image(image):
     # image should a 64 x 64 x 3 RGB image
-    assert isinstance(
-        image, np.ndarray), "image should be an numpy array"
-    assert image.shape == (64, 64, 3), "image should be of size 64x64x3"
+    _assert(isinstance(
+        image, np.ndarray), "image should be an numpy array")
+    _assert(image.shape == (64, 64, 3), "image should be of size 64x64x3")
     if image.dtype == np.float32:
         # we accept float32, but only if the values
         # are between 0 and 255 and we convert them
@@ -28,4 +29,12 @@ def check_track(directory, track):
         data = json.load(file)
     id = data['challenge_id']
 
-    assert track == id, "your running test script for {0}, but the crowdai.json says: {1}".format(track, id)
+    _assert(track == id, "your running test script for {0}, but the crowdai.json says: {1}".format(track, id))
+
+
+def _assert(condition, message):
+    try:
+        assert condition, message
+    except AssertionError as e:
+        CrowdAiNotifier.assertion_failure(message)
+        raise e
