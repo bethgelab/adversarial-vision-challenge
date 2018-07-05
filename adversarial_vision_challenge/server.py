@@ -23,7 +23,7 @@ from .common import _assert
 
 # the number of max requests to predict for this model run
 # based on the # of images to predict
-number_of_max_predictions = int(os.environ.get('NUM_OF_MAX_PREDICTIONS', 100)) * 1000
+number_of_max_predictions = (float(os.environ.get('NUM_OF_MAX_PREDICTIONS', 100)) * 1000)
 
 
 def model_server(model):
