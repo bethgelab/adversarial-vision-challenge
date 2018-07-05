@@ -50,7 +50,7 @@ def model_server(model):
     log.setLevel(logging.ERROR)
 
     channel_axis = model.channel_axis()
-    _assert(channel_axis in [1, 3], "model channel axis should be either 1 or 3"
+    _assert(channel_axis in [1, 3], "model channel axis should be either 1 or 3")
 
     try:
         bounds = model.bounds()
@@ -58,7 +58,7 @@ def model_server(model):
         bounds = (0, 255)
         logger.info('model has no bounds method, assuming (0, 255)')
 
-    _assert)bounds == (0, 255), (
+    _assert(bounds == (0, 255), (
         'bounds must be (0, 255), update your model or use the preprocessing '
         'argument of foolbox model wrappers'))
 
