@@ -97,7 +97,9 @@ def model_server(model):
 
     @app.route("/predict", methods=['POST'])
     def predict():
-        _check_rate_limitation()
+        eval_request = _is_evaluator_request(request)
+        if not eval_request:
+            _check_rate_limitation()
         start = timeit.default_timer()
         prediction = _predict(request)
         end = timeit.default_timer()
@@ -111,6 +113,14 @@ def model_server(model):
 
     logger.info('starting server on port {}'.format(port))
     app.run(host='0.0.0.0', port=port)
+
+
+def _is_evaluator_request(request):
+    http_header = request.headers.get('Evaluator-Secret')
+    eval_secret = os.getenv('EVALUATOR_SECRET')
+    return http_header is not None \
+            and eval_secret is not None \
+            and http_header == eval_secret
 
 
 def _check_rate_limitation():
