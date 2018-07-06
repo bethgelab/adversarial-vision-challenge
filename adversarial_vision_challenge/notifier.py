@@ -23,11 +23,11 @@ class GeneralNotifications:
 class CrowdAiNotifier():
 
     @staticmethod
-    def _send_notification(event_type, message, payload={}):
+    def _send_notification(event_type, message, payload={}, blocking=False):
         crowdai_events = crowdai_api.events.CrowdAIEvents()
         default_payload = {"challenge_id": "NIPS18_AVC"}
         default_payload.update(payload)
-        crowdai_events.register_event(event_type, message, payload)
+        crowdai_events.register_event(event_type, message, payload, blocking)
 
     # ~~~~~~~~~~~~~~~~ ATTACK NOTIFICATIONS ~~~~~~~~~~~~~~~~
     @staticmethod
@@ -48,7 +48,8 @@ class CrowdAiNotifier():
             message="Attack successfully completed.",
             payload={
                 "type": AttackNotifications.TYPE
-            }
+            },
+            blocking=True
         )
 
     @staticmethod
@@ -72,7 +73,7 @@ class CrowdAiNotifier():
                 "type": ModelNotifications.TYPE
             }
         )
-    
+
     @staticmethod
     def assertion_failure(message):
         CrowdAiNotifier._send_notification(
