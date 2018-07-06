@@ -5,6 +5,7 @@ import requests
 import numpy as np
 from foolbox.models import Model
 import bson
+import os
 
 from .retry_helper import retryable
 from .logger import logger
@@ -76,7 +77,12 @@ class HTTPClient(object):
         the result and returns it as a dictionary.
         """
         url = self._url(path=path)
+        
         headers = {'content-type': 'application/bson'}
+        eval_secret = os.getenv('EVALUATOR_SECRET')
+        if eval_secret is not None:
+            headers['Evaluator-Secret'] = eval_secret
+
         data = self._encode_arrays(data)
         data = bson.dumps(data)
         r = self.requests.post(url, headers=headers, data=data)
