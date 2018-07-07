@@ -53,7 +53,7 @@ def worst_case_distance(X):
     return distance(X, worst_case)
 
 
-def test_attack(directory, no_cache, gpu, mode, samples):
+def test_attack(directory, no_cache, no_build, gpu, mode, samples):
     check_track(
         directory,
         'nips-2018-avc-targeted-attack' if mode == 'targeted'
@@ -70,28 +70,32 @@ def test_attack(directory, no_cache, gpu, mode, samples):
 
     print('Submission folder: "{}"'.format(directory))
 
-    repo2docker_args = ["--no-run", "--debug"]
     # build image
-    if no_cache:
-        reset_repo2docker_cache()
-        print('Building image (without cache)...')
+    repo2docker_args = ["--no-run", "--debug"]
+    if not no_build:
+        if no_cache:
+            reset_repo2docker_cache()
+            print('Building image (without cache)...')
+        else:
+            print('Building image from cache (if exists)...', end="")
+        repo2docker_args.append(
+            "--image-name {}".format(image_name)
+        )
+
+        cmd = "crowdai_repo2docker"
+        cmd += " "
+        cmd += " ".join(repo2docker_args)
+        cmd += " "
+        cmd += directory
+
+        subprocess.check_call(
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+                image_name, directory), shell=True)
+        checkmark()
     else:
-        print('Building image from cache (if exists)...', end="")
-
-    repo2docker_args.append(
-        "--image-name {}".format(image_name)
-    )
-
-    cmd = "crowdai_repo2docker"
-    cmd += " "
-    cmd += " ".join(repo2docker_args)
-    cmd += " "
-    cmd += directory
-
-    subprocess.check_call(
-        "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
-            image_name, directory), shell=True)
-    checkmark()
+        #TODO: Use logger instead of print statements
+        print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
+        repo2docker_args.append("--no-build")
 
     # remove old container if exists
     containers = str(subprocess.check_output('docker ps -a', shell=True))
@@ -207,15 +211,27 @@ def test_attack(directory, no_cache, gpu, mode, samples):
         "NV_GPU={gpu} nvidia-docker run  -d --net=host "
         "-e GPU={gpu} "
         "-v {imagepath}:/images/ -v {resultpath}:/results/ "
+        "-v {directorypath}:/prd "
         "-e MODEL_SERVER=localhost "
         "-e MODEL_PORT={port} "
         "-e INPUT_IMG_PATH=/images "
         "-e INPUT_YML_PATH=/images/labels.yml "
         "-e OUTPUT_ADVERSARIAL_PATH=/results "
-        "--name={cn} {im} bash run.sh".format(
+        "--name={cn} {im} bash /prd/run.sh".format(
             gpu=gpu, port=port, imagepath=imagepath, resultpath=resultpath,
-            cn=container_name, im=image_name), shell=True).wait()
-
+            directorypath=os.path.abspath(directory), cn=container_name,
+            im=image_name), shell=True).wait()
+    """
+    NOTE: To make debugging cycles easier, there is a slight difference between
+    how a model is orchestrated on the evaluation server and how it is
+    orchestrated here in this test suite.
+    On the server, repo2docker copies all the files to /home/crowdai inside
+    the docker image, and we start the image by running `/home/crowdai/run.sh`
+    but, in the test suite, we mount the working directory to `/prd` inside
+    the container, and run it by executing `/prd/run.sh`.
+    This removes the need to redundantly copy files over into the container
+    when debugging your code with `--no-build` enabled.
+    """
     checkmark()
 
     # monitor results folder to check if adversarial is written
@@ -322,6 +338,9 @@ if __name__ == '__main__':
         "--no-cache", action='store_true',
         help="Disables the cache when building the attack image.")
     parser.add_argument(
+        "--no-build", action='store_true',
+        help="Disables building the image, and assumes they exist. ")
+    parser.add_argument(
         "--mode", default='untargeted',
         help="Mode can be targeted or untargeted.")
     parser.add_argument(
@@ -330,5 +349,5 @@ if __name__ == '__main__':
         "--samples", type=int, default=100,
         help="Number of samples for testing.")
     args = parser.parse_args()
-    test_attack(args.directory, no_cache=args.no_cache, gpu=args.gpu,
-                mode=args.mode, samples=args.samples)
+    test_attack(args.directory, no_cache=args.no_cache, no_build=args.no_build,
+                gpu=args.gpu, mode=args.mode, samples=args.samples)
