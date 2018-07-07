@@ -170,3 +170,5 @@ tags
 
 
 # End of https://www.gitignore.io/api/osx,vim,linux,python,visualstudiocode
+
+**/.crowdai

@@ -2,6 +2,7 @@ import numpy as np
 from .logger import logger
 import json
 import os
+import uuid
 from .notifier import CrowdAiNotifier
 
 
@@ -38,3 +39,19 @@ def _assert(condition, message):
     except AssertionError as e:
         CrowdAiNotifier.assertion_failure(message)
         raise e
+
+def reset_repo2docker_cache():
+    """
+        repo2docker does not support ignoring the repo2docker cache yet,
+        so we work around that by adding some content to the repository to
+        reset the cache.
+    """
+    crowdai_folder = ".crowdai"
+    if not os.path.exists(crowdai_folder):
+        os.mkdir(crowdai_folder)
+
+    fp = open(os.path.join(
+        crowdai_folder, "state"
+    ), "w")
+    fp.write(str(uuid.uuid4()))
+    fp.close()

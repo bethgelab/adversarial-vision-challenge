@@ -8,8 +8,9 @@ import os
 import sys
 import socket
 from tqdm import tqdm
-from adversarial_vision_challenge.common import check_track
 from adversarial_vision_challenge.utils import _wait_for_server_start
+from adversarial_vision_challenge.common import check_track, \
+            reset_repo2docker_cache
 
 def checkmark():
     print(u' \u2713')
@@ -35,17 +36,28 @@ def test_model(directory, no_cache, gpu):
 
     print('Submission folder: "{}"'.format(directory))
 
+    repo2docker_args = ["--no-run", "--debug"]
     # build image
     if no_cache:
+        reset_repo2docker_cache()
         print('Building image (without cache)...')
-        raise AssertionError(
-            'Option does not yet exist because repo2docker does'
-            ' not allow us to build without cache.')
     else:
         print('Building image from cache (if exists)...', end="")
-        cmd = "crowdai-repo2docker --no-run --image-name {} --debug {}"
-        subprocess.check_call(cmd.format(image_name, directory), shell=True)
-        checkmark()
+
+    repo2docker_args.append(
+        "--image-name {}".format(image_name)
+    )
+
+    cmd = "crowdai_repo2docker"
+    cmd += " "
+    cmd += " ".join(repo2docker_args)
+    cmd += " "
+    cmd += directory
+
+    subprocess.check_call(
+        "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+            image_name, directory), shell=True)
+    checkmark()
 
     # remove old container if exists
     containers = str(subprocess.check_output('docker ps -a', shell=True))
