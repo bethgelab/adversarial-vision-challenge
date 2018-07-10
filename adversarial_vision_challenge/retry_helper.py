@@ -20,7 +20,7 @@ def retryable(func, retries=3):
             try:
                 return func(*args, **kwargs)
             except requests.exceptions.RequestException:
-                traceback.print_exc(file=sys.stdout)
+                pass
         logger.error('Retried request for %s times. Giving up.', retried)
         CrowdAiNotifier.retries_exceeded()
         raise RetriesExceededError(

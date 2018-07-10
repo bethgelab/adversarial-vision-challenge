@@ -73,6 +73,7 @@ def attack_complete():
 
 
 def _wait_for_server_start(model, retried=0):
+    logger.info('{0} for model server to start...'.format('Wating' if retried == 0 else 'Still waiting'))
     version = ''
     try:
         version = model.server_version()
@@ -81,7 +82,7 @@ def _wait_for_server_start(model, retried=0):
             if retried < 3:
                 _wait_for_server_start(model, retried + 1)
             else:
-                logger.error("Can't reach model server: %s.", model.base_url)
+                logger.error("=======> Can't reach model server: %s.", model.base_url)
 
 
 def load_model():
