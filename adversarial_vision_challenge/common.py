@@ -30,7 +30,7 @@ def check_track(directory, track):
         data = json.load(file)
     id = data['challenge_id']
 
-    _assert(track == id, "your running test script for {0}, but the crowdai.json says: {1}".format(track, id))
+    _assert(track == id, "you are running test script for {0}, but the crowdai.json says: {1}".format(track, id))
 
 
 def _assert(condition, message):
