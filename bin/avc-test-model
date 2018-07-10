@@ -38,7 +38,12 @@ def test_model(directory, no_cache, no_build, gpu):
 
     # build image
     repo2docker_args = ["--no-run", "--debug"]
-    if not no_build:
+    repo2docker_args = ["--no-run", "--debug"]
+    if no_build:
+        #TODO: Use logger instead of print statements
+        print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
+        repo2docker_args.append("--no-build")
+    else:
         if no_cache:
             reset_repo2docker_cache()
             print('Building image (without cache)...')
@@ -47,21 +52,15 @@ def test_model(directory, no_cache, no_build, gpu):
         repo2docker_args.append(
             "--image-name {}".format(image_name)
         )
-
         cmd = "crowdai_repo2docker"
         cmd += " "
         cmd += " ".join(repo2docker_args)
         cmd += " "
         cmd += directory
-
         subprocess.check_call(
             "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
                 image_name, directory), shell=True)
         checkmark()
-    else:
-        #TODO: Use logger instead of print statements
-        print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
-        repo2docker_args.append("--no-build")
 
     # remove old container if exists
     containers = str(subprocess.check_output('docker ps -a', shell=True))
@@ -91,7 +90,7 @@ def test_model(directory, no_cache, no_build, gpu):
     the container, and run it by executing `/prd/run.sh`.
     This removes the need to redundantly copy files over into the container
     when debugging your code with `--no-build` enabled.
-    """    
+    """
 
     # attach to container to print output in case of failures
     cmd = "docker attach {}".format(container_name)
