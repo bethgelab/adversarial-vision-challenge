@@ -29,12 +29,18 @@ if __name__ == '__main__':
     if args.no_build:
         no_build = ' --no-build'
 
-    cmd = ('avc-test-attack{cache} {no_build} --gpu {gpu} --mode untargeted'
-           ' --samples {samples} {directory}')
+    cmd = 'avc-test-attack      \
+            {cache}             \
+            {no_build}          \
+            --gpu {gpu}         \
+            --mode untargeted   \
+            --samples {samples} \
+            {directory}'
     cmd = cmd.format(
         cache=cache,
-        no_build=no_build
+        no_build=no_build,
         gpu=args.gpu,
         directory=args.directory,
-        samples=args.samples)
+        samples = args.samples
+        )
     subprocess.Popen(cmd, shell=True).wait()
