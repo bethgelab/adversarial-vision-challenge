@@ -5,6 +5,7 @@ import subprocess
 import uuid
 
 from git import Repo
+from git.remote import Remote
 from distutils.util import strtobool
 import sys
 import os
@@ -21,8 +22,13 @@ def _ask_to_continue(question):
 
 def _is_dirty(repo):
     is_dirty = repo.is_dirty()
+    remote = Remote(repo, 'origin')
+    remote_sha = remote.fetch()[0].commit.hexsha
+    local_sha = repo.head.commit.hexsha
+    commited_but_not_pushed = (remote_sha != local_sha)
+
     should_continue = True
-    if is_dirty:
+    if is_dirty or commited_but_not_pushed:
         should_continue = _ask_to_continue(
             'You have uncommited changes to your repository. Are you sure'
             ' you want to submit before pushing the latest changes?')
