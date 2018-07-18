@@ -13,20 +13,34 @@ if __name__ == '__main__':
         "--no-cache", action='store_true',
         help="Disables the cache when building the attack image.")
     parser.add_argument(
+        "--no-build", action='store_true',
+        help="Disables building the image, and assumes they exist. ")
+    parser.add_argument(
         "--gpu", type=int, default=0, help="GPU number to run container on")
     parser.add_argument(
         "--samples", type=int, default=100,
         help="Number of samples for testing.")
+
     args = parser.parse_args()
+    cache = ''
+    no_build = ''
     if args.no_cache:
         cache = ' --no-cache'
-    else:
-        cache = ''
-    cmd = ('avc-test-attack{cache} --gpu {gpu} --mode untargeted'
-           ' --samples {samples} {directory}')
+    if args.no_build:
+        no_build = ' --no-build'
+
+    cmd = 'avc-test-attack      \
+            {cache}             \
+            {no_build}          \
+            --gpu {gpu}         \
+            --mode untargeted   \
+            --samples {samples} \
+            {directory}'
     cmd = cmd.format(
         cache=cache,
+        no_build=no_build,
         gpu=args.gpu,
         directory=args.directory,
-        samples=args.samples)
+        samples = args.samples
+        )
     subprocess.Popen(cmd, shell=True).wait()

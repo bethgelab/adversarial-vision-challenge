@@ -36,9 +36,9 @@ if __name__ == '__main__':
     except OSError:
         print('Error: Docker is not installed on your system!')
         raise
-    
+
     print('Docker installed & running: \u2713')
-    
+
     # 1. check if nvidia-docker is available and running
     try:
         FNULL = open(os.devnull, 'w')
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # 1. test that the crowdai_repo2docker is installed
     if find_executable('crowdai-repo2docker') is None:
         raise AssertionError(
-            """crowdai-repo2docker is need to build a docker image of your model/attack
+            """crowdai-repo2docker is needed to build a docker image of your model/attack
             submission but is not installed on your system. Please install with
 
                 python3 -m pip install crowdai-repo2docker

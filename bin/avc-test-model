@@ -8,8 +8,9 @@ import os
 import sys
 import socket
 from tqdm import tqdm
-from adversarial_vision_challenge.common import check_track
 from adversarial_vision_challenge.utils import _wait_for_server_start
+from adversarial_vision_challenge.common import check_track, \
+            reset_repo2docker_cache
 
 def checkmark():
     print(u' \u2713')
@@ -21,7 +22,7 @@ def _get_free_port():
         return s.getsockname()[1]
 
 
-def test_model(directory, no_cache, gpu):
+def test_model(directory, no_cache, no_build, gpu):
     check_track(directory, 'nips-2018-avc-robust-model-track')
 
     image_name = 'avc/model_submission'
@@ -36,15 +37,29 @@ def test_model(directory, no_cache, gpu):
     print('Submission folder: "{}"'.format(directory))
 
     # build image
-    if no_cache:
-        print('Building image (without cache)...')
-        raise AssertionError(
-            'Option does not yet exist because repo2docker does'
-            ' not allow us to build without cache.')
+    repo2docker_args = ["--no-run", "--debug"]
+    repo2docker_args = ["--no-run", "--debug"]
+    if no_build:
+        #TODO: Use logger instead of print statements
+        print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
+        repo2docker_args.append("--no-build")
     else:
-        print('Building image from cache (if exists)...', end="")
-        cmd = "crowdai-repo2docker --no-run --image-name {} --debug {}"
-        subprocess.check_call(cmd.format(image_name, directory), shell=True)
+        if no_cache:
+            reset_repo2docker_cache()
+            print('Building image (without cache)...')
+        else:
+            print('Building image from cache (if exists)...', end="")
+        repo2docker_args.append(
+            "--image-name {}".format(image_name)
+        )
+        cmd = "crowdai_repo2docker"
+        cmd += " "
+        cmd += " ".join(repo2docker_args)
+        cmd += " "
+        cmd += directory
+        subprocess.check_call(
+            "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+                image_name, directory), shell=True)
         checkmark()
 
     # remove old container if exists
@@ -58,11 +73,24 @@ def test_model(directory, no_cache, gpu):
     # start model container
     port = _get_free_port()
     cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
-    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash run.sh"
-    cmd = cmd.format(port=port, gpu=gpu, cn=container_name, im=image_name)
+    cmd += "-v {directorypath}:/prd "
+    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash /prd/run.sh"
+    cmd = cmd.format(port=port, gpu=gpu, cn=container_name, im=image_name,
+                    directorypath=os.path.abspath(directory))
     print('Starting container on port {} using the command \n \n {}'.format(
         port, cmd))
     subprocess.check_call(cmd, shell=True)
+    """
+    NOTE: To make debugging cycles easier, there is a slight difference between
+    how a model is orchestrated on the evaluation server and how it is
+    orchestrated here in this test suite.
+    On the server, repo2docker copies all the files to /home/crowdai inside
+    the docker image, and we start the image by running `/home/crowdai/run.sh`
+    but, in the test suite, we mount the working directory to `/prd` inside
+    the container, and run it by executing `/prd/run.sh`.
+    This removes the need to redundantly copy files over into the container
+    when debugging your code with `--no-build` enabled.
+    """
 
     # attach to container to print output in case of failures
     cmd = "docker attach {}".format(container_name)
@@ -135,6 +163,10 @@ if __name__ == '__main__':
         "--no-cache", action='store_true',
         help="Disables the cache when building the model image.")
     parser.add_argument(
+        "--no-build", action='store_true',
+        help="Disables building the image, and assumes they exist. ")
+    parser.add_argument(
         "--gpu", type=int, default=0, help="GPU number to run container on")
     args = parser.parse_args()
-    test_model(args.directory, no_cache=args.no_cache, gpu=args.gpu)
+    test_model( args.directory, no_cache=args.no_cache,
+                no_build=args.no_build, gpu=args.gpu)
