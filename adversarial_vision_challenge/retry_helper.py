@@ -2,9 +2,8 @@ import requests
 from functools import wraps
 import time
 from .logger import logger
-import traceback
-import sys
 from .notifier import CrowdAiNotifier
+
 
 class RetriesExceededError(Exception):
     pass
@@ -25,4 +24,5 @@ def retryable(func, retries=3):
         CrowdAiNotifier.retries_exceeded()
         raise RetriesExceededError(
             "Failed already {0} times. No further retrying.".format(retries))
+
     return retry
