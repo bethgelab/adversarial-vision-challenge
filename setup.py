@@ -39,6 +39,7 @@ install_requires = [
 tests_require = [
     'pytest',
     'pytest-cov',
+    'tensorflow'
 ]
 
 setup(
