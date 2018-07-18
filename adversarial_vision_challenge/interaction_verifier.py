@@ -24,7 +24,7 @@ class InteractionVerifier:
         # timeout in seconds or client <-> server interaction
         self.__time_out = int(os.getenv('CS_INTERACTION_TIMEOUT', 180))
         self.__instance_id = uuid.uuid1()
-        print(self.__instance_id)
+        logger.info('client <-> server interaction verifier id: %s', self.__instance_id)
 
     def start(self):
         self.__last_request = time.time()
