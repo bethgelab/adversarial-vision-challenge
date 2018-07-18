@@ -123,7 +123,7 @@ class TinyImageNetBSONModel(Model, HTTPClient):
     """
 
     def __init__(self, url):
-        self.requests = requests
+        self.requests = requests.Session()
 
         self._base_url = url
 
