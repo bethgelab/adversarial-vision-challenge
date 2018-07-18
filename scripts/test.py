@@ -1,9 +1,6 @@
-import os
-
 import foolbox
-import numpy as np
-from PIL import Image
 from adversarial_vision_challenge import load_model, read_images, store_adversarial
+
 
 def run_attack(model, image, label):
     attack = foolbox.attacks.AdditiveGaussianNoiseAttack()
@@ -13,10 +10,11 @@ def run_attack(model, image, label):
     print(adversarial.distance.value)
     return adversarial.image
 
+
 def main():
     model = load_model()
     for (file_name, image, label) in read_images():
-        print('predicted model for: ', file_name, np.argmax(model.predictions(image)))
+        print('predicted model for: ', file_name, model(image))
         adversarial = run_attack(model, image, label)
         store_adversarial(file_name, adversarial)
 
