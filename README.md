@@ -1,5 +1,7 @@
 # NIPS Adversarial Vision Challenge
 
+[![Build Status](https://travis-ci.org/bethgelab/adversarial-vision-challenge.svg?branch=master)](https://travis-ci.org/bethgelab/adversarial-vision-challenge)
+
 ### Installation
 
 To install the package simply run:
