@@ -19,6 +19,7 @@ from . import __version__
 from .logger import logger
 from .notifier import CrowdAiNotifier
 from .common import _assert
+from .interaction_verifier import InteractionVerifier
 
 
 # the number of max requests to predict for this model run
@@ -42,10 +43,10 @@ def model_server(model):
 
     """
 
-
     port = int(os.environ.get('MODEL_PORT', 8989))
 
     app = Flask(__name__)
+    cs_interaction_verifier = InteractionVerifier()
 
     # disable verbose flask loggig
     import logging
@@ -100,6 +101,7 @@ def model_server(model):
 
     @app.route("/predict", methods=['POST'])
     def predict():
+        cs_interaction_verifier.mark()
         eval_request = _is_evaluator_request(request)
         if not eval_request:
             _check_rate_limitation()

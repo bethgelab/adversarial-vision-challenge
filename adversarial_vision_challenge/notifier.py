@@ -6,6 +6,7 @@ from enum import Enum
 class ModelNotifications:
     TYPE = "AVC.MODEL"
     TOO_MANY_REQUESTS = "AVC.MODEL.TOO_MANY_REQUESTS_ERROR"
+    NO_CLIENT_INTERACTION = "AVC.MODEL.NO_CLIENT_INTERACTION"
 
 
 class AttackNotifications:
@@ -69,6 +70,16 @@ class CrowdAiNotifier():
         CrowdAiNotifier._send_notification(
             event_type=ModelNotifications.TOO_MANY_REQUESTS,
             message="The attack has exceeded the max number of allowed predictions requests.",
+            payload={
+                "type": ModelNotifications.TYPE
+            }
+        )
+
+    @staticmethod
+    def no_client_interaction():
+        CrowdAiNotifier._send_notification(
+            event_type=ModelNotifications.NO_CLIENT_INTERACTION,
+            message="The model server has not received any requests from the client for too long.",
             payload={
                 "type": ModelNotifications.TYPE
             }
