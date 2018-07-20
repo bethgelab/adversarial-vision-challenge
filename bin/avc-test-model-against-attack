@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+
+from __future__ import print_function
+
+import threading
+import argparse
+import subprocess
+import adversarial_vision_challenge
+import foolbox
+import numpy as np
+import yaml
+import time
+import os
+import sys
+import socket
+from tqdm import tqdm
+from adversarial_vision_challenge.common import check_track, \
+            reset_repo2docker_cache
+
+
+def checkmark():
+    print(u' \u2713')
+
+
+def _get_free_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+def load_image(path):
+    x = np.load(path)
+    assert x.shape == (64, 64, 3)
+    assert x.dtype == np.uint8
+    return x
+
+
+def distance(X, Y):
+    assert X.dtype == np.uint8
+    assert Y.dtype == np.uint8
+    X = X.astype(np.float64) / 255
+    Y = Y.astype(np.float64) / 255
+    return np.linalg.norm(X - Y)
+
+
+# distance if no adversarial was found (worst case)
+def worst_case_distance(X):
+    assert X.dtype == np.uint8
+    worst_case = np.zeros_like(X)
+    worst_case[X < 128] = 255
+    return distance(X, worst_case)
+
+
+def test_attack(model_directory, attack_directory, no_cache, no_build, model_gpu, attack_gpu, mode, samples):
+    check_track(
+        attack_directory,
+        'nips-2018-avc-targeted-attack' if mode == 'targeted'
+        else 'nips-2018-avc-untargeted-attack')
+
+    attack_image_name = 'avc/attack_submission'
+    attack_container_name = 'avc_test_attack_submission'
+
+    model_image_name = 'avc/model_submission'
+    model_container_name = 'avc_test_model_submission'
+
+    subprocess.check_call('avc-test-setup', shell=True)
+
+    print()
+    print('Building docker image of model & attack submission')
+    print('-----------------------------------------')
+
+    print('Submission folder: "{}"'.format(model_directory))
+
+    # build image
+    for image_name, directory in [(model_image_name, model_container_name), (attack_image_name, attack_container_name)]:
+        repo2docker_args = ["--no-run", "--debug"]
+        if no_build:
+            #TODO: Use logger instead of print statements
+            print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
+            repo2docker_args.append("--no-build")
+        else:
+            if no_cache:
+                reset_repo2docker_cache()
+                print('Building images (without cache)...')
+            else:
+                print('Building images from cache (if exists)...', end="")
+            docker_args.append(
+                "--image-name {}".format(image_name)
+            )
+            cmd = "crowdai_repo2docker"
+            cmd += " "
+            cmd += " ".join(repo2docker_args)
+            cmd += " "
+            cmd += directory
+            subprocess.check_call(
+                "crowdai-repo2docker --no-run --image-name {} --debug {}".format(
+                    image_name, directory), shell=True)
+            checkmark()
+
+        # remove old container if exists
+        containers = str(subprocess.check_output('docker ps -a', shell=True))
+        if container_name in containers:
+            print('Removing existing submission container...', end="")
+            cmd = "docker rm -f {cn}".format(cn=container_name)
+            subprocess.check_call(cmd, shell=True)
+            checkmark()
+
+    # build local temporary directories to read sample images
+    # and write adversarials
+    print('Creating empty folders for test samples and results...', end="")
+    for folder in ['avc_images/', 'avc_results/']:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        else:
+            import shutil
+            shutil.rmtree(folder)
+            os.makedirs(folder)
+
+    checkmark()
+
+    # write source images for testing into image directory
+    print('Saving test samples into samples_folder'
+          ' (default: avc_images/)...', end="")
+    test_samples = adversarial_vision_challenge.utils.get_test_data()[:samples]
+    labels = {}
+
+    for k, (image, label) in enumerate(test_samples):
+        np.save("avc_images/img{}.npy".format(k), image)
+        labels['img{}.npy'.format(k)] = label
+
+    with open('avc_images/labels.yml', 'w') as outfile:
+        yaml.dump(labels, outfile)
+
+    checkmark()
+
+    # start model container
+    port = _get_free_port()
+    cmd = "NV_GPU={gpu} nvidia-docker run --expose={port} -d -p {port}:{port} "
+    cmd += "-v {directorypath}:/prd "
+    cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash /prd/run.sh"
+    cmd = cmd.format(port=port, gpu=model_gpu, cn=model_container_name, im=model_image_name,
+                    directorypath=os.path.abspath(model_directory))
+    print('Starting container on port {} using the command \n \n {}'.format(
+        port, cmd))
+    subprocess.check_call(cmd, shell=True)
+    """
+    NOTE: To make debugging cycles easier, there is a slight difference between
+    how a model is orchestrated on the evaluation server and how it is
+    orchestrated here in this test suite.
+    On the server, repo2docker copies all the files to /home/crowdai inside
+    the docker image, and we start the image by running `/home/crowdai/run.sh`
+    but, in the test suite, we mount the working directory to `/prd` inside
+    the container, and run it by executing `/prd/run.sh`.
+    This removes the need to redundantly copy files over into the container
+    when debugging your code with `--no-build` enabled.
+    """
+
+    # get IP
+    form = '{{ .NetworkSettings.IPAddress }}'
+    cmd = "docker inspect --format='{}' {}".format(form, container_name)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    p.wait()
+    ip = p.stdout.read()[:-1].decode('UTF-8')
+    print('Received IP of server: ', ip)
+
+    # wait until start of model
+    print('Waiting for server to start...', end="")
+    cmd = 'wget -qO - --tries 30 --retry-connrefused http://{}:{}'.format(
+        ip, port)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    response = p.stdout.read()[:-1].decode('UTF-8')
+    assert response == "NIPS 2018 Adversarial Vision Challenge Model Server"
+
+    checkmark()
+
+    # start attack container
+    print('Starting attack container...', end="")
+    hostpath = os.path.abspath('.')
+    imagepath = os.path.join(hostpath, 'avc_images')
+    resultpath = os.path.join(hostpath, 'avc_results')
+    subprocess.Popen(
+        "NV_GPU={gpu} nvidia-docker run  -d --net=host "
+        "-e GPU={gpu} "
+        "-v {imagepath}:/images/ -v {resultpath}:/results/ "
+        "-v {directorypath}:/prd "
+        "-e MODEL_SERVER=localhost "
+        "-e MODEL_PORT={port} "
+        "-e INPUT_IMG_PATH=/images "
+        "-e INPUT_YML_PATH=/images/labels.yml "
+        "-e OUTPUT_ADVERSARIAL_PATH=/results "
+        "--name={cn} {im} bash /prd/run.sh".format(
+            gpu=attack_gpu, port=port, imagepath=imagepath, resultpath=resultpath,
+            directorypath=os.path.abspath(attack_directory), cn=attack_container_name,
+            im=attack_image_name), shell=True).wait()
+    """
+    NOTE: To make debugging cycles easier, there is a slight difference between
+    how a model is orchestrated on the evaluation server and how it is
+    orchestrated here in this test suite.
+    On the server, repo2docker copies all the files to /home/crowdai inside
+    the docker image, and we start the image by running `/home/crowdai/run.sh`
+    but, in the test suite, we mount the working directory to `/prd` inside
+    the container, and run it by executing `/prd/run.sh`.
+    This removes the need to redundantly copy files over into the container
+    when debugging your code with `--no-build` enabled.
+    """
+    checkmark()
+
+    # monitor results folder to check if adversarial is written
+    print('Starting to test attack against model and test samples...')
+    print('If you would like to test with less or more samples, append e.g'
+          ' --samples 50 to your avc-test-model-against-attack command.')
+    start_time = time.time()
+
+    with tqdm(total=len(test_samples)) as pbar:
+        while True:
+            time.sleep(1)
+            result_files = os.listdir('avc_results/')
+            num_results = len(result_files)
+            # print('{} result files written after {} seconds.'.format(
+            #     len(result_files), int(time.time() - start_time)))
+
+            # update progress bar
+            if pbar.n < num_results:
+                pbar.update(num_results - pbar.n)
+
+            # check that results are written within time limit
+            if num_results == 0 and time.time() - start_time > 19:
+                raise RuntimeError('Results file not written with time limit'
+                                   ' (20 seconds)- something went wrong!')
+            elif time.time() - start_time > 21 and \
+                    (time.time() - start_time) / float(len(result_files)) > 10:
+                raise RuntimeError('Your attack is too slow'
+                                   ' (> 10 seconds / sample)!')
+
+            # end condition
+            if num_results == len(test_samples):
+                break
+
+            containers = str(subprocess.check_output('docker ps', shell=True))
+            if 'avc_test_attack' not in containers:
+                print("""Your container stopped running before all images
+                were processed. This either means that the attack was not
+                able to produce adversarials for all samples or that the
+                attack stopped because of runtime errors.""")
+                break
+
+    if len(result_files) < len(test_samples) / 2:
+        raise RuntimeError('The attack produced results for less then 50\%'
+                           ' of the samples ({}/{}).'.format(
+                               len(result_files), len(test_samples)))
+
+    # check that the number of calls is below maximum
+    if fmodel.calls < len(test_samples) * 1000:
+        print('Your attack queried the model {} times'
+              ' (maximum allowed: {})'.format(
+                  fmodel.calls, len(test_samples) * 1000))
+    else:
+        raise RuntimeError('Your attack queried the model {} too many times'
+                           ' (maximum allowed: {})!'.format(
+                               fmodel.calls, len(test_samples) * 1000))
+
+    # check whether results are truly adversarials and report median distance
+    distances = []
+    real_distances = []
+
+    for file in os.listdir('avc_results/'):
+        original = load_image('avc_images/{}'.format(file))
+        try:
+            adversarial = load_image('avc_results/{}'.format(file))
+        except AssertionError:
+            print('adversarial for {} is invalid'.format(file))
+            adversarial = None
+        if adversarial is None:
+            _distance = float(worst_case_distance(original))
+        else:
+            _distance = float(distance(original, adversarial))
+        real_distances.append(_distance)
+
+    real_distances = np.array(real_distances)
+    distances = real_distances * 255
+    print('Number of adversarials {} of {}'.format(
+        (distances > 50).sum(), distances.shape[0]))
+
+    median = np.median(real_distances[distances > 50])
+    print('Median adversarial distances: {}'
+          ' (optimum = 50 / 255 = 0.196)'.format(median))
+
+    if np.isnan(median):
+        print('distances: ', distances)
+        sys.stdout.flush()
+        raise RuntimeError('Your attack seems to have failed on more'
+                           ' than half of the samples')
+
+    print('')
+    print('All tests successful, have fun submitting!')
+    print('')
+    sys.exit()
+
+
+if __name__ == '__main__':
+    print('running {}'.format(os.path.basename(__file__)))
+    # set log file
+    os.environ["LOG_FILE"] = 'avc.log'
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "model_directory", help="The directory containing the model submission.")
+    parser.add_argument(
+        "attack_directory", help='The directory containing the attack submission.')
+    parser.add_argument(
+        "--no-cache", action='store_true',
+        help="Disables the cache when building the attack image.")
+    parser.add_argument(
+        "--no-build", action='store_true',
+        help="Disables building the image, and assumes they exist. ")
+    parser.add_argument(
+        "--mode", default='untargeted',
+        help="Mode can be targeted or untargeted.")
+    parser.add_argument(
+        "--model_gpu", type=int, default=0, help="GPU number to run model container on")
+    parser.add_argument(
+        "--attack_gpu", type=int, default=0, help="GPU number to run attack container on")
+    parser.add_argument(
+        "--samples", type=int, default=100,
+        help="Number of samples for testing.")
+    args = parser.parse_args()
+    test_attack(args.model_directory, args.attack_directory, no_cache=args.no_cache, no_build=args.no_build,
+                model_gpu=args.model_gpu, attack_gpu=args.attack_gpu, mode=args.mode, samples=args.samples)
