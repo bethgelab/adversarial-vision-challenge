@@ -18,6 +18,7 @@ class InteractionVerifier:
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super().__new__(cls)
+            cls.instance.start()
         return cls.instance
 
     def __init__(self):
@@ -25,7 +26,7 @@ class InteractionVerifier:
         self.__time_out = int(os.getenv('CS_INTERACTION_TIMEOUT', 180))
         self.__instance_id = uuid.uuid1()
         logger.info('client <-> server interaction verifier id: %s', self.__instance_id)
-        self.start()
+
 
     def start(self):
         self.__last_request = time.time()
