@@ -90,7 +90,6 @@ def model_server(model):
 
     @app.route("/")
     def main():  # pragma: no cover
-        cs_interaction_verifier.start()
         return Response(
             'NIPS 2018 Adversarial Vision Challenge Model Server\n',
             mimetype='text/plain')

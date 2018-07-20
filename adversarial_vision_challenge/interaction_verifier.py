@@ -25,6 +25,7 @@ class InteractionVerifier:
         self.__time_out = int(os.getenv('CS_INTERACTION_TIMEOUT', 180))
         self.__instance_id = uuid.uuid1()
         logger.info('client <-> server interaction verifier id: %s', self.__instance_id)
+        self.start()
 
     def start(self):
         self.__last_request = time.time()
@@ -50,7 +51,7 @@ class Caller:
     def __init__(self):
         # interval in seconds to check client <-> server interaction
         self.__cs_interaction_verifier = InteractionVerifier()
-        self.__interval = int(os.getenv('CS_INTERACTION_TIMEOUT_INTERVAL', 5))
+        self.__interval = int(os.getenv('CS_INTERACTION_CHECK_INTERVAL', 5))
         thread = threading.Thread(target=self.run, args=())
         thread.daemon = True
         thread.start()
