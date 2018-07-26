@@ -62,3 +62,7 @@ In order for the attacks to work, your models / attack folders need to have the 
 - for models: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-model-template
 - for attacks: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-attack-template
 
+
+### FAQ
+
+'TBA'
