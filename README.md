@@ -65,4 +65,4 @@ In order for the attacks to work, your models / attack folders need to have the 
 
 ### FAQ
 
-'TBA'
+`TBA.`
