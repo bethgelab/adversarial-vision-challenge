@@ -251,13 +251,12 @@ def test_attack(directory, no_cache, no_build, gpu, mode, samples):
                 pbar.update(num_results - pbar.n)
 
             # check that results are written within time limit
-            if num_results == 0 and time.time() - start_time > 19:
+            if num_results == 0 and time.time() - start_time > 50:
                 raise RuntimeError('Results file not written with time limit'
-                                   ' (20 seconds)- something went wrong!')
-            elif time.time() - start_time > 21 and \
-                    (time.time() - start_time) / float(len(result_files)) > 10:
+                                   ' (50 seconds)- something went wrong!')
+            elif (time.time() - start_time - 50) / float(len(result_files)) > 20:
                 raise RuntimeError('Your attack is too slow'
-                                   ' (> 10 seconds / sample)!')
+                                   ' (> 20 seconds / sample)!')
 
             # end condition
             if num_results == len(test_samples):
