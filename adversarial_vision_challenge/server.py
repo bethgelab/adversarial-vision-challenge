@@ -117,7 +117,7 @@ def model_server(model):
         return 'Shutting down ...'
 
     logger.info('starting server on port {}'.format(port))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, use_reloader=False)
 
 
 def _is_evaluator_request(request):
