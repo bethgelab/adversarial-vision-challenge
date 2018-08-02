@@ -13,7 +13,7 @@ This package contains helper functions to implement models and attacks that can 
 Furthermore, this package also contains test scripts that should be used before submission to perform local tests of your model or attack. These test scripts are Python 3 only, because they depend on `crowdai-repo2docker`. See `Running Tests Scripts` section below for more detailed information.
 
 
-### Implementing a model server
+### Implementing a model
 
 To run a model server, load your model and wrap it as a [foolbox model](https://foolbox.readthedocs.io/en/latest/modules/models.html).
 Then pass the foolbox model to the `model_server` function.
@@ -63,6 +63,10 @@ In order for the attacks to work, your models / attack folders need to have the 
 - for attacks: https://gitlab.crowdai.org/adversarial-vision-challenge/nips18-avc-attack-template
 
 
-### FAQ
+## FAQ
 
-`TBA.`
+**Can you recommend some papers to get more familiar with adversarial examples, attacks and the threat model considered in this NIPS competition?**
+Have a look at our [reading list](https://medium.com/@wielandbr/reading-list-for-the-nips-2018-adversarial-vision-challenge-63cbac345b2f) that summarizes papers relevant for this competition.
+
+**What can I not pass bounds = (0, 1) when creating the foolbox model?**
+We expect that all models process images that have values between 0 and 255. Therefore, we enforce that the model bounds are set to (0, 255). If your model expects images with values between 0 and 1, you can just pass `bounds=(0, 255)` and `preprocessing=(0, 255)`, then the Foolbox model wrapper will divide all inputs by 255. Alternatively, you can leave preprocessing at `(0, 1)` and change your model to expect values between 0 and 255.
