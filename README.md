@@ -68,5 +68,5 @@ In order for the attacks to work, your models / attack folders need to have the 
 #### Can you recommend some papers to get more familiar with adversarial examples, attacks and the threat model considered in this NIPS competition?
 Have a look at our [reading list](https://medium.com/@wielandbr/reading-list-for-the-nips-2018-adversarial-vision-challenge-63cbac345b2f) that summarizes papers relevant for this competition.
 
-#### What can I not pass bounds = (0, 1) when creating the foolbox model?
+#### Why can I not pass bounds = (0, 1) when creating the foolbox model?
 We expect that all models process images that have values between 0 and 255. Therefore, we enforce that the model bounds are set to (0, 255). If your model expects images with values between 0 and 1, you can just pass `bounds=(0, 255)` and `preprocessing=(0, 255)`, then the Foolbox model wrapper will divide all inputs by 255. Alternatively, you can leave preprocessing at `(0, 1)` and change your model to expect values between 0 and 255.
