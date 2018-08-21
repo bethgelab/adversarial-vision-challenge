@@ -81,3 +81,7 @@ url = {https://arxiv.org/abs/1808.01976}
 
 #### Why can I not pass bounds = (0, 1) when creating the foolbox model?
 We expect that all models process images that have values between 0 and 255. Therefore, we enforce that the model bounds are set to (0, 255). If your model expects images with values between 0 and 1, you can just pass `bounds=(0, 255)` and `preprocessing=(0, 255)`, then the Foolbox model wrapper will divide all inputs by 255. Alternatively, you can leave preprocessing at `(0, 1)` and change your model to expect values between 0 and 255.
+
+
+#### How is the score for an individual model, attack, image calculated?
+We normalize the pixel values of the clean image and the adversarial to be between 0 and 1 and then take the L2 norm of the perturbation (adverarial - clean) as if they were vectors.
