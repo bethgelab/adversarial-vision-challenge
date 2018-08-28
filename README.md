@@ -2,6 +2,10 @@
 
 [![Build Status](https://travis-ci.org/bethgelab/adversarial-vision-challenge.svg?branch=master)](https://travis-ci.org/bethgelab/adversarial-vision-challenge)
 
+### Publication
+
+https://arxiv.org/abs/1808.01976
+
 ### Installation
 
 To install the package simply run:
