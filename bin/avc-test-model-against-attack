@@ -2,11 +2,9 @@
 
 from __future__ import print_function
 
-import threading
 import argparse
 import subprocess
 import adversarial_vision_challenge
-import foolbox
 import numpy as np
 import yaml
 import time
@@ -14,8 +12,8 @@ import os
 import sys
 import socket
 from tqdm import tqdm
-from adversarial_vision_challenge.common import check_track, \
-            reset_repo2docker_cache
+from adversarial_vision_challenge.common import check_track
+from adversarial_vision_challenge.common import reset_repo2docker_cache
 
 
 def checkmark():
@@ -77,7 +75,7 @@ def test_attack(model_directory, attack_directory, no_cache, no_build, model_gpu
     for image_name, container_name, directory in [(attack_image_name, attack_container_name, attack_directory), (model_image_name, model_container_name, model_directory)]:
         repo2docker_args = ["--no-run", "--debug"]
         if no_build:
-            #TODO: Use logger instead of print statements
+            # TODO: Use logger instead of print statements
             print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
             repo2docker_args.append("--no-build")
         else:
@@ -141,7 +139,7 @@ def test_attack(model_directory, attack_directory, no_cache, no_build, model_gpu
     cmd += "-v {directorypath}:/prd "
     cmd += "-e GPU={gpu} -e MODEL_PORT={port} --name={cn} {im} bash /prd/run.sh"
     cmd = cmd.format(port=port, gpu=model_gpu, cn=model_container_name, im=model_image_name,
-                    directorypath=os.path.abspath(model_directory))
+                     directorypath=os.path.abspath(model_directory))
     print('Starting container on port {} using the command \n \n {}'.format(
         port, cmd))
     subprocess.check_call(cmd, shell=True)
@@ -225,6 +223,7 @@ def test_attack(model_directory, attack_directory, no_cache, no_build, model_gpu
 
             # check that results are written within time limit
             if not no_time_limit:
+                # TODO: compare to avc-test-attack
                 if num_results == 0 and time.time() - start_time > 19:
                     raise RuntimeError('Results file not written with time limit'
                                        ' (20 seconds)- something went wrong!')
@@ -283,8 +282,7 @@ def test_attack(model_directory, attack_directory, no_cache, no_build, model_gpu
         (distances > 50).sum(), distances.shape[0]))
 
     median = np.median(real_distances[distances > 50])
-    print('Median adversarial distances: {}'
-          ' (optimum = 50 / 255 = 0.196)'.format(median))
+    print('Median adversarial distances: {}'.format(median))
 
     if np.isnan(median):
         print('distances: ', distances)
