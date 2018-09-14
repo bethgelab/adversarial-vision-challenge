@@ -14,8 +14,8 @@ import os
 import sys
 import socket
 from tqdm import tqdm
-from adversarial_vision_challenge.common import check_track, \
-            reset_repo2docker_cache
+from adversarial_vision_challenge.common import check_track
+from adversarial_vision_challenge.common import reset_repo2docker_cache
 
 
 def checkmark():
@@ -73,8 +73,9 @@ def test_attack(directory, no_cache, no_build, gpu, mode, samples):
     # build image
     repo2docker_args = ["--no-run", "--debug"]
     if no_build:
-        #TODO: Use logger instead of print statements
-        print("WARNING: ", "Not building the docker image and assuming it is built and available at : {}".format(image_name))
+        # TODO: Use logger instead of print statements
+        print("WARNING: ", "Not building the docker image and assuming it"
+              " is built and available at : {}".format(image_name))
         repo2docker_args.append("--no-build")
     else:
         if no_cache:
@@ -251,12 +252,15 @@ def test_attack(directory, no_cache, no_build, gpu, mode, samples):
                 pbar.update(num_results - pbar.n)
 
             # check that results are written within time limit
-            if num_results == 0 and time.time() - start_time > 50:
-                raise RuntimeError('Results file not written with time limit'
-                                   ' (50 seconds)- something went wrong!')
-            elif (time.time() - start_time - 50) / float(len(result_files)) > 20:
-                raise RuntimeError('Your attack is too slow'
-                                   ' (> 20 seconds / sample)!')
+            duration = time.time() - start_time
+            if duration > 50:
+                if num_results == 0:
+                    raise RuntimeError(
+                        'Results file not written with time limit'
+                        ' (50 seconds)- something went wrong!')
+                elif (duration - 50) / float(len(result_files)) > 20:
+                    raise RuntimeError('Your attack is too slow'
+                                       ' (> 20 seconds / sample)!')
 
             # end condition
             if num_results == len(test_samples):
