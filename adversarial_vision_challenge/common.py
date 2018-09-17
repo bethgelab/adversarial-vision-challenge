@@ -20,6 +20,7 @@ def check_image(image):
         if image.max() > 255:
             logger.warning('clipped value greater than 255 to 255')
         image = np.clip(image, 0, 255)
+        image = image.round()
         image = image.astype(np.uint8)
     assert image.dtype == np.uint8
     return image
